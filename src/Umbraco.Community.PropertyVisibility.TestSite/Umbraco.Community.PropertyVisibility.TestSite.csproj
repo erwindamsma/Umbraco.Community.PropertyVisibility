@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+	<PropertyGroup>
+		<TargetFramework>net10.0</TargetFramework>
+		<IsPackable>false</IsPackable>
+		<!-- The backoffice ships pre-compressed assets; dotnet must not compress them again -->
+		<CompressionEnabled>false</CompressionEnabled>
+		<!-- Razor files are needed for the backoffice to work correctly -->
+		<CopyRazorGenerateFilesToPublishDirectory>true</CopyRazorGenerateFilesToPublishDirectory>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Umbraco.Cms" />
+		<PackageReference Include="uSync" />
+		<!-- App-local ICU for consistent globalization across platforms -->
+		<PackageReference Include="Microsoft.ICU.ICU4C.Runtime" />
+		<RuntimeHostConfigurationOption Include="System.Globalization.AppLocalIcu" Value="72.1.0.3" Condition="$(RuntimeIdentifier.StartsWith('linux')) or $(RuntimeIdentifier.StartsWith('win')) or ('$(RuntimeIdentifier)' == '' and !$([MSBuild]::IsOSPlatform('osx')))" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\Umbraco.Community.PropertyVisibility\Umbraco.Community.PropertyVisibility.csproj" />
+	</ItemGroup>
+
+	<!--
+		A package consumer gets the JSON schema wiring from the nupkg's buildTransitive props; a ProjectReference imports no
+		package props, so the same file is imported here. After a build, appsettings-schema.json references
+		appsettings-schema.Umbraco.Community.PropertyVisibility.json and PropertyVisibility.config-schema.json sits in the
+		content root next to PropertyVisibility.config.json (both copies are gitignored). Static web assets need no import:
+		they flow through the ProjectReference.
+	-->
+	<Import Project="..\Umbraco.Community.PropertyVisibility\buildTransitive\Umbraco.Community.PropertyVisibility.JsonSchemas.props" />
+
+</Project>

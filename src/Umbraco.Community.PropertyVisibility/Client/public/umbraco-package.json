@@ -1,0 +1,14 @@
+{
+	"id": "Umbraco.Community.PropertyVisibility",
+	"name": "Property Visibility",
+	"version": "0.0.0",
+	"allowTelemetry": true,
+	"extensions": [
+		{
+			"type": "bundle",
+			"alias": "Umbraco.Community.PropertyVisibility.Bundle",
+			"name": "Property Visibility Bundle",
+			"js": "/App_Plugins/UmbracoCommunityPropertyVisibility/property-visibility.js"
+		}
+	]
+}

@@ -1,0 +1,36 @@
+name: "Feature request"
+description: "Suggest a change or an addition."
+labels: ["enhancement"]
+body:
+- type: markdown
+  attributes:
+    value: |
+      Thanks for the suggestion. [What it does not do](https://github.com/erwindamsma/Umbraco.Community.PropertyVisibility#what-it-does-not-do) lists the known limits and why some of them are deliberate.
+- type: textarea
+  id: "problem"
+  attributes:
+    label: "Problem"
+    description: "What are you trying to do, and what stops you today? A concrete example helps: the document or element types, the sites, and what editors should see."
+  validations:
+    required: true
+- type: textarea
+  id: "proposal"
+  attributes:
+    label: "Proposed solution"
+    description: "How it could work, for example the configuration you would like to write."
+  validations:
+    required: false
+- type: textarea
+  id: "alternatives"
+  attributes:
+    label: "Alternatives"
+    description: "What you tried or considered instead, such as Umbraco's own property permissions on user groups."
+  validations:
+    required: false
+- type: input
+  id: "umbracoVersion"
+  attributes:
+    label: "Umbraco version"
+    description: "The version you would use it on, for example 17.7.0."
+  validations:
+    required: false

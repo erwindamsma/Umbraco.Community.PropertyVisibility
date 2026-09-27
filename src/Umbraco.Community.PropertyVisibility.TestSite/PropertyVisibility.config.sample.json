@@ -1,0 +1,15 @@
+{
+	"$schema": "./PropertyVisibility.config-schema.json",
+	"HideEmptiedContainers": true,
+	"ContentTypes": {
+		"siteSettings": { "Containers": ["legacyTab"] }
+	},
+	"Sites": {
+		"corporate": {
+			"RootNodeKey": "5c2b4d7e-9f1a-4c3e-8b6d-2a1f0e9d8c7b",
+			"ContentTypes": {
+				"landingPage": { "Containers": ["seoTab"] }
+			}
+		}
+	}
+}

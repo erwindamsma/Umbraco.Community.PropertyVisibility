@@ -1,0 +1,30 @@
+name: "Question"
+description: "Ask how to configure or use the package."
+labels: ["question"]
+body:
+- type: markdown
+  attributes:
+    value: |
+      The [README](https://github.com/erwindamsma/Umbraco.Community.PropertyVisibility#readme) and the [configuration reference](https://github.com/erwindamsma/Umbraco.Community.PropertyVisibility/blob/main/docs/configuration.md) answer most questions. The health check (Settings > Health Check > Configuration > Property Visibility configuration) explains most rules that do not work.
+- type: textarea
+  id: "question"
+  attributes:
+    label: "Question"
+    description: "What you want to achieve and what you tried."
+  validations:
+    required: true
+- type: textarea
+  id: "configuration"
+  attributes:
+    label: "Configuration"
+    description: "The relevant part of the `PropertyVisibility` section or the rules file, if any. Replace names you do not want to share."
+    render: json
+  validations:
+    required: false
+- type: input
+  id: "versions"
+  attributes:
+    label: "Versions"
+    description: "Property Visibility and Umbraco versions, for example 1.0.0-rc.1 on 17.6.2."
+  validations:
+    required: false

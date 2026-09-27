@@ -1,0 +1,163 @@
+name: Release
+
+# Runs when a version tag is pushed (v1.2.3 or v1.2.3-rc.1). Publishes to nuget.org through trusted publishing
+# (NuGet/login, no long-lived API key) and creates the GitHub release.
+#
+# Three jobs, each with only the permissions it needs:
+#   build           contents: read. Checkout, npm ci, restore, build, unit tests, schema check, pack and inspection:
+#                   everything that runs third-party code (npm lifecycle scripts, MSBuild targets from NuGet packages).
+#                   Uploads the nupkg and the release notes.
+#   publish         id-token: write only, in the environment "nuget". No checkout, no npm, no build: downloads the
+#                   package, exchanges the OIDC token for a short-lived nuget.org key and pushes.
+#   github-release  contents: write only. No checkout: downloads the package and the release notes, creates the release.
+#
+# Prerequisites: a nuget.org trusted publishing policy for this repository and release.yml (scope "push new packages
+# and versions", glob Umbraco.Community.PropertyVisibility*), and the repository secret NUGET_USER holding the nuget.org
+# profile name. Recommended: required reviewers on the "nuget" environment, and the policy restricted to that environment.
+#
+# Every action is pinned to a commit SHA, with its release tag in the trailing comment, because this workflow holds the
+# publishing credentials. Dependabot (github-actions) updates the SHA and the comment together.
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+*'
+
+permissions: {}
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+jobs:
+  build:
+    name: Build, test and pack
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # The tag without its v: the client manifest, the assemblies and the nupkg all carry it (build/ci/common.sh).
+      - name: Version from tag
+        run: echo "PACKAGE_VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: global.json
+
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: src/Umbraco.Community.PropertyVisibility/Client/package-lock.json
+
+      # The same scripts as ci.yml. CI=true makes them build with ContinuousIntegrationBuild (deterministic /_/ paths),
+      # which pack.sh verifies next to the package inspection.
+      - name: Build
+        run: bash build/ci/build.sh
+
+      - name: Unit tests
+        run: bash build/ci/test.sh
+
+      - name: JSON schema drift check
+        run: bash build/ci/schema-check.sh
+
+      - name: Pack and inspect
+        run: bash build/ci/pack.sh
+
+      # The CHANGELOG section "## [<version>] - <date>". A stable release without one fails here, before anything is
+      # published; a prerelease falls back to a pointer at CHANGELOG.md.
+      - name: Release notes from CHANGELOG
+        run: |
+          set -euo pipefail
+          awk -v ver="$PACKAGE_VERSION" '
+            /^## / { if (found) exit; if (index($0, "[" ver "]") > 0) { found = 1; next } }
+            found { print }
+          ' CHANGELOG.md > artifacts/nupkg/release-notes.md
+          if ! grep -q '[^[:space:]]' artifacts/nupkg/release-notes.md; then
+            case "$PACKAGE_VERSION" in
+              *-*) echo "See CHANGELOG.md for the changes in $PACKAGE_VERSION." > artifacts/nupkg/release-notes.md ;;
+              *)
+                echo "::error::CHANGELOG.md has no section '## [$PACKAGE_VERSION]' with release notes; a stable release needs one"
+                exit 1
+                ;;
+            esac
+          fi
+          cat artifacts/nupkg/release-notes.md
+
+      - name: Upload the package and the release notes
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: release
+          path: |
+            artifacts/nupkg/*.nupkg
+            artifacts/nupkg/release-notes.md
+          if-no-files-found: error
+
+  publish:
+    name: Publish to NuGet
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: nuget
+    permissions:
+      id-token: write
+    steps:
+      - name: Download the package
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: release
+          path: release
+
+      # Only the CLI for `dotnet nuget push`; nothing is restored or built here.
+      - name: Setup .NET
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: 10.0.x
+
+      - name: NuGet login (trusted publishing)
+        id: login
+        uses: NuGet/login@8d196754b4036150537f80ac539e15c2f1028841 # v1.2.0
+        with:
+          user: ${{ secrets.NUGET_USER }}
+
+      - name: Push to NuGet
+        env:
+          NUGET_API_KEY: ${{ steps.login.outputs.NUGET_API_KEY }}
+        run: dotnet nuget push release/*.nupkg --api-key "$NUGET_API_KEY" --source https://api.nuget.org/v3/index.json --skip-duplicate
+
+  github-release:
+    name: GitHub release
+    needs: publish
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - name: Download the package and the release notes
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: release
+          path: release
+
+      - name: Create the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          version=${GITHUB_REF_NAME#v}
+          prerelease=()
+          case "$version" in *-*) prerelease=(--prerelease) ;; esac
+          gh release create "$GITHUB_REF_NAME" release/*.nupkg --repo "$GITHUB_REPOSITORY" --verify-tag \
+            --title "$GITHUB_REF_NAME" --notes-file release/release-notes.md "${prerelease[@]}"

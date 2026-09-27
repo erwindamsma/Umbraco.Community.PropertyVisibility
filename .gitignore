@@ -1,0 +1,62 @@
+# Build output
+bin/
+obj/
+artifacts/
+*.binlog
+*.nupkg
+*.snupkg
+
+# IDE and user files
+.vs/
+.idea/
+*.user
+*.suo
+*.DotSettings.user
+
+# Node
+node_modules/
+
+# Backoffice client build output (produced by the BuildClient MSBuild target / npm run build)
+**/wwwroot/App_Plugins/UmbracoCommunityPropertyVisibility/
+
+# Test site runtime data (the uSync export in src/*/uSync/v17 stays tracked)
+**/umbraco/Data/
+**/umbraco/Logs/
+**/umbraco/models/
+**/wwwroot/media/
+*.sqlite.db
+*.sqlite.db-shm
+*.sqlite.db-wal
+
+# JSON schemas that Umbraco.Cms.Targets copies into the test site on build. Anchored to the test site: the package
+# project's own generated schemas (appsettings-schema.Umbraco.Community.PropertyVisibility.json,
+# PropertyVisibility.config-schema.json) are committed and drift-checked.
+src/Umbraco.Community.PropertyVisibility.TestSite/appsettings-schema*.json
+src/Umbraco.Community.PropertyVisibility.TestSite/umbraco-package-schema.json
+src/Umbraco.Community.PropertyVisibility.TestSite/PropertyVisibility.config-schema.json
+
+# An active rules file, anywhere: the test site's (copied from PropertyVisibility.config.sample.json, or written by the
+# acceptance suite while it runs) or one dropped into another project folder. The sample stays tracked; appsettings is
+# the test site's committed rules source.
+**/PropertyVisibility.config.json
+
+# Test output
+TestResults/
+test-results/
+playwright-report/
+# The acceptance suite's copy of the test site's appsettings.json while it runs (restored after an interrupted run)
+.run-state/
+
+# Secrets and machine-local settings. The package project has no appsettings of its own (the test site's are tracked;
+# appsettings-schema.*.json is the committed schema and does not match these patterns).
+.env
+.env.*
+src/Umbraco.Community.PropertyVisibility/appsettings.json
+src/Umbraco.Community.PropertyVisibility/appsettings.*.json
+*.pfx
+*.pem
+*.key
+
+# OS
+.DS_Store
+Thumbs.db

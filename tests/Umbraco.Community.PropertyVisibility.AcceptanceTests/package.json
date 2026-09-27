@@ -1,0 +1,20 @@
+{
+	"name": "umbraco-community-property-visibility-acceptance-tests",
+	"private": true,
+	"version": "0.0.0",
+	"type": "module",
+	"engines": {
+		"node": ">=24.13"
+	},
+	"scripts": {
+		"test:acceptance": "playwright test",
+		"test:acceptance:headed": "playwright test --headed",
+		"install:browsers": "playwright install chromium",
+		"typecheck": "tsc --noEmit"
+	},
+	"devDependencies": {
+		"@playwright/test": "1.63.0",
+		"@types/node": "^24.0.0",
+		"typescript": "^5.9.3"
+	}
+}

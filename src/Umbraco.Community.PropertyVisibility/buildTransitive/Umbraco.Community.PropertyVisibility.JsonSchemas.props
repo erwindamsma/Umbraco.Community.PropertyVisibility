@@ -1,0 +1,18 @@
+<Project>
+
+	<!--
+		JSON schemas for Umbraco.Cms.Targets. On build it copies every UmbracoJsonSchemaFiles item into the site's project
+		folder (CopyUmbracoJsonSchemaFiles) and references each one without Reference="false" from the site's
+		appsettings-schema.json (AddUmbracoJsonSchemaReferences), which gives IntelliSense for the PropertyVisibility section.
+		The rules file schema is only copied: PropertyVisibility.config.json references it with
+		"$schema": "./PropertyVisibility.config-schema.json".
+
+		The paths resolve in both layouts: in the nupkg the schemas sit at the package root, in the repository at the package
+		project root (both one folder up from this file).
+	-->
+	<ItemGroup>
+		<UmbracoJsonSchemaFiles Include="$(MSBuildThisFileDirectory)..\appsettings-schema.Umbraco.Community.PropertyVisibility.json" />
+		<UmbracoJsonSchemaFiles Include="$(MSBuildThisFileDirectory)..\PropertyVisibility.config-schema.json" Reference="false" />
+	</ItemGroup>
+
+</Project>

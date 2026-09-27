@@ -1,0 +1,6 @@
+<Project>
+
+	<!-- One version list for the whole repository: central package management lives in src/Directory.Packages.props. -->
+	<Import Project="$(MSBuildThisFileDirectory)..\src\Directory.Packages.props" />
+
+</Project>

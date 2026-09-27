@@ -1,0 +1,147 @@
+name: CI
+
+# Every step calls a script in build/ci, so a local run executes the same commands (CONTRIBUTING.md, "Run CI locally").
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# A new push to a pull request cancels its superseded run; a run on main is never cancelled once it has started.
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+  # One version for the client manifest (umbraco-package.json), the assemblies and the nupkg of this run.
+  PACKAGE_VERSION: 0.0.0-ci.${{ github.run_number }}
+
+jobs:
+  build-test-pack:
+    name: Build, test and pack
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: src/Umbraco.Community.PropertyVisibility/Client/package-lock.json
+
+      # Client (npm ci, typecheck, build) and solution (Release, ContinuousIntegrationBuild because CI=true).
+      - name: Build
+        run: bash build/ci/build.sh
+
+      - name: Unit tests
+        run: bash build/ci/test.sh
+
+      - name: JSON schema drift check
+        run: bash build/ci/schema-check.sh
+
+      # Pack into artifacts/nupkg, inspect the package (tools/inspect-nupkg.sh) and check its deterministic source paths.
+      - name: Pack and inspect
+        run: bash build/ci/pack.sh
+
+      # Corrupted copies (entries outside the allowlist such as a source map or a secrets.json in the client output, a
+      # missing LICENSE, THIRD-PARTY-NOTICES.md or Hey API banner, a wrong manifest version) must fail the inspection.
+      - name: Leak test for the package inspection
+        run: bash build/ci/test-inspect-nupkg.sh
+
+      - name: Upload package
+        uses: actions/upload-artifact@v7
+        with:
+          name: nupkg
+          path: artifacts/nupkg/*.nupkg
+          if-no-files-found: error
+
+      - name: Upload unit test results
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: unit-test-results
+          path: TestResults
+          if-no-files-found: ignore
+
+  acceptance:
+    name: Acceptance tests (Playwright)
+    needs: build-test-pack
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      PV_PORT: 44300
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: |
+            src/Umbraco.Community.PropertyVisibility/Client/package-lock.json
+            tests/Umbraco.Community.PropertyVisibility.AcceptanceTests/package-lock.json
+
+      - name: Build
+        run: bash build/ci/build.sh
+
+      # Clean SQLite database, unattended install and uSync import; waits for the backoffice to answer 200.
+      - name: Start the test site
+        run: bash build/ci/start-test-site.sh
+
+      - name: Playwright suite
+        run: bash build/ci/acceptance.sh
+
+      - name: Stop the test site
+        if: always()
+        run: bash build/ci/stop-test-site.sh
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report
+          path: tests/Umbraco.Community.PropertyVisibility.AcceptanceTests/playwright-report
+          if-no-files-found: ignore
+
+      - name: Upload Playwright test results
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-test-results
+          path: tests/Umbraco.Community.PropertyVisibility.AcceptanceTests/test-results
+          if-no-files-found: ignore
+
+      - name: Upload test site logs
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-site-logs
+          path: |
+            src/Umbraco.Community.PropertyVisibility.TestSite/umbraco/Logs
+            artifacts/test-site/test-site.log
+          if-no-files-found: ignore

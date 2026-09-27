@@ -1,0 +1,153 @@
+name: Compatibility
+
+# Weekly build, unit tests, a type check of the client against that version's backoffice typings and the whole
+# Playwright suite against the latest stable Umbraco 17.x (or a version given by hand), to catch backoffice drift before
+# users do. The build uses exactly that version (-p:UmbracoCmsVersion=[x.y.z]) and fails when any Umbraco.Cms package
+# resolves another one. A failed run, or a scheduled run cancelled by its timeout, opens an issue
+# "Compatibility: Umbraco <version>", or comments on the open one.
+#
+# GitHub disables a scheduled workflow after 60 days without activity in a public repository: re-enable it in the
+# Actions tab after a quiet period (docs/compatibility.md, "Recurring check").
+
+on:
+  schedule:
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+    inputs:
+      umbraco-version:
+        description: Exact Umbraco.Cms version, for example 17.7.0. Empty tests the latest stable 17.x on nuget.org.
+        required: false
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+
+concurrency:
+  group: compat-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+  PACKAGE_VERSION: 0.0.0-compat.${{ github.run_number }}
+
+jobs:
+  compat:
+    name: Build and test against Umbraco 17.x
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    outputs:
+      umbraco-version: ${{ steps.resolve.outputs.version }}
+    env:
+      PV_PORT: 44300
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: |
+            src/Umbraco.Community.PropertyVisibility/Client/package-lock.json
+            tests/Umbraco.Community.PropertyVisibility.AcceptanceTests/package-lock.json
+
+      # After Setup Node: the script reads nuget.org's registration index with node (listed versions only).
+      - name: Resolve the Umbraco version
+        id: resolve
+        env:
+          REQUESTED_VERSION: ${{ inputs.umbraco-version }}
+        run: |
+          version=$(bash build/ci/resolve-umbraco-version.sh "$REQUESTED_VERSION")
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "UMBRACO_CMS_VERSION=$version" >> "$GITHUB_ENV"
+          echo "### Umbraco.Cms $version" >> "$GITHUB_STEP_SUMMARY"
+
+      # UMBRACO_CMS_VERSION (set above) makes build.sh restore exactly that version and print what every project resolved.
+      - name: Build
+        run: bash build/ci/build.sh
+
+      # build.sh builds the client from the lockfile (the floor's typings); this checks it against the tested version's.
+      - name: Client typings against @umbraco-cms/backoffice of that version
+        run: bash build/ci/client-typecheck.sh
+
+      - name: Unit tests
+        run: bash build/ci/test.sh
+
+      - name: JSON schema drift check
+        run: bash build/ci/schema-check.sh
+
+      - name: Start the test site
+        run: bash build/ci/start-test-site.sh
+
+      - name: Playwright suite
+        run: bash build/ci/acceptance.sh
+
+      - name: Stop the test site
+        if: always()
+        run: bash build/ci/stop-test-site.sh
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: compat-playwright-report
+          path: tests/Umbraco.Community.PropertyVisibility.AcceptanceTests/playwright-report
+          if-no-files-found: ignore
+
+      - name: Upload Playwright test results
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: compat-playwright-test-results
+          path: tests/Umbraco.Community.PropertyVisibility.AcceptanceTests/test-results
+          if-no-files-found: ignore
+
+      - name: Upload test site logs
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: compat-test-site-logs
+          path: |
+            src/Umbraco.Community.PropertyVisibility.TestSite/umbraco/Logs
+            artifacts/test-site/test-site.log
+          if-no-files-found: ignore
+
+  # The only job that may write issues. Also runs when a scheduled run was cancelled (the job timeout cancels a job).
+  report-failure:
+    name: Open or update the compatibility issue
+    needs: compat
+    if: ${{ always() && (needs.compat.result == 'failure' || (needs.compat.result == 'cancelled' && github.event_name == 'schedule')) }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      issues: write
+    steps:
+      - name: 'Open or comment on the issue "Compatibility: Umbraco <version>"'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          UMBRACO_VERSION: ${{ needs.compat.outputs.umbraco-version }}
+          COMPAT_RESULT: ${{ needs.compat.result }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          title="Compatibility: Umbraco ${UMBRACO_VERSION:-17.x (version not resolved)}"
+          body="The compatibility run against Umbraco.Cms ${UMBRACO_VERSION:-(not resolved)} ended with '$COMPAT_RESULT': $RUN_URL"
+          number=$(gh issue list --state open --search "\"$title\" in:title" --json number,title --limit 50 \
+            | jq -r --arg title "$title" '[.[] | select(.title == $title)][0].number // empty')
+          if [ -n "$number" ]; then
+            gh issue comment "$number" --body "$body"
+            echo "Commented on issue #$number"
+          else
+            gh issue create --title "$title" --body "$body"
+          fi

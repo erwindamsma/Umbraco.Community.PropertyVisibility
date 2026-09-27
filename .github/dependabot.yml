@@ -1,0 +1,37 @@
+version: 2
+updates:
+  - package-ecosystem: nuget
+    directory: /
+    schedule:
+      interval: weekly
+    ignore:
+      # The Umbraco floor is a deliberate decision (widened only after the acceptance checklist runs);
+      # Umbraco 18 is a separate major of this package.
+      - dependency-name: "Umbraco.Cms*"
+      # uSync majors follow Umbraco majors (uSync 18 needs Umbraco 18), so a major update can never restore here.
+      - dependency-name: "uSync"
+        update-types: ["version-update:semver-major"]
+
+  - package-ecosystem: npm
+    directory: /src/Umbraco.Community.PropertyVisibility/Client
+    schedule:
+      interval: weekly
+    ignore:
+      # Tracks the Umbraco floor, bumped by hand together with the NuGet range.
+      - dependency-name: "@umbraco-cms/backoffice"
+
+  # The Playwright acceptance suite (@playwright/test is pinned to an exact version; CI installs the matching Chromium).
+  - package-ecosystem: npm
+    directory: /tests/Umbraco.Community.PropertyVisibility.AcceptanceTests
+    schedule:
+      interval: weekly
+    ignore:
+      # The typings follow the Node major of the toolchain (Node 24), bumped by hand together with the workflows.
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
+
+  # Also keeps release.yml's SHA pins current: it updates the commit SHA and the version in the trailing comment together.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly

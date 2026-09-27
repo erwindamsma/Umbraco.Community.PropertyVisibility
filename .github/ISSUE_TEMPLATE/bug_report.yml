@@ -1,0 +1,81 @@
+name: "Bug report"
+description: "Something is hidden that should not be, is not hidden, or breaks the backoffice."
+labels: ["bug"]
+body:
+- type: markdown
+  attributes:
+    value: |
+      Thanks for taking the time to report this. Please check [What it does not do](https://github.com/erwindamsma/Umbraco.Community.PropertyVisibility#what-it-does-not-do) first: some limits are deliberate.
+
+      Security issues do not belong here: report them privately as described in [SECURITY.md](https://github.com/erwindamsma/Umbraco.Community.PropertyVisibility/blob/main/SECURITY.md).
+- type: input
+  id: "packageVersion"
+  attributes:
+    label: "Property Visibility version"
+    description: "The exact package version, for example 1.0.0-rc.1."
+  validations:
+    required: true
+- type: input
+  id: "umbracoVersion"
+  attributes:
+    label: "Umbraco version"
+    description: "The exact version, for example 17.6.2, not just 17. The help menu (the ? icon) in the backoffice shows it."
+  validations:
+    required: true
+- type: textarea
+  id: "summary"
+  attributes:
+    label: "What happens"
+    description: "What you did, what you expected, and what happened instead. Name the document type or element type, the property, tab or group, and the site (root node) involved."
+  validations:
+    required: true
+- type: textarea
+  id: "reproduction"
+  attributes:
+    label: "Steps to reproduce"
+    description: "Steps on a clean Umbraco site with only this package, if you can. Say where the property is edited: a document, a block (Block List, Block Grid, Single Block, rich text editor; in a modal or inline), a new or an existing document, split view."
+    placeholder: |
+      1. ...
+      2. ...
+  validations:
+    required: true
+- type: textarea
+  id: "configuration"
+  attributes:
+    label: "Configuration"
+    description: "The `PropertyVisibility` section of your appsettings, and the rules file (`PropertyVisibility.config.json`) if you use one. Replace site names, keys and aliases you do not want to share, but keep the structure."
+    render: json
+  validations:
+    required: true
+- type: textarea
+  id: "healthCheck"
+  attributes:
+    label: "Health check output"
+    description: "Settings > Health Check > Configuration > Property Visibility configuration: the summary line and every issue line. The summary shows the full server path of the rules file, and some issues name root nodes with their keys: replace the path, root node names and keys you do not want to share, but keep the issue codes and configuration paths."
+    render: text
+  validations:
+    required: false
+- type: textarea
+  id: "browserConsole"
+  attributes:
+    label: "Browser console with the debug flag"
+    description: |
+      In the backoffice, run `localStorage['Umbraco.Community.PropertyVisibility.Debug'] = '1'` in the browser console, show the Verbose level, reload, open the document that misbehaves, and paste the lines that start with `[PropertyVisibility]`, plus any errors. The lines hold document and content type keys; they never add the key or name of the document's site root, but when the open document is itself a root node, its own key is the document key.
+    render: text
+  validations:
+    required: false
+- type: textarea
+  id: "serverLog"
+  attributes:
+    label: "Server log lines"
+    description: "Lines that mention PropertyVisibility or an issue code (`PV001` and up), from the log viewer (Settings > Log Viewer) or `umbraco/Logs`. Paste the rendered messages, not the raw JSON entries. `PV101` and `PV102` list every root node with its name and key, and `PV001` and `PV304` carry the full server path of the rules file: replace the root node names and keys, server paths and site labels you do not want to share, but keep the issue codes and configuration paths. Leave out `MachineName`, `ProcessName`, `ProcessId` and `ApplicationId`."
+    render: text
+  validations:
+    required: false
+- type: textarea
+  id: "environment"
+  attributes:
+    label: "Environment"
+    description: "Anything else that may matter: hosting (IIS, Docker, Linux, Umbraco Cloud), load balancing, the browser, other backoffice packages."
+  validations:
+    required: false

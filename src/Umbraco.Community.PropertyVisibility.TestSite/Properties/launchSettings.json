@@ -1,0 +1,25 @@
+{
+	"$schema": "https://json.schemastore.org/launchsettings.json",
+	"profiles": {
+		"https": {
+			"commandName": "Project",
+			"dotnetRunMessages": true,
+			"launchBrowser": false,
+			"launchUrl": "umbraco",
+			"applicationUrl": "https://localhost:44300;http://localhost:44301",
+			"environmentVariables": {
+				"ASPNETCORE_ENVIRONMENT": "Development"
+			}
+		},
+		"http": {
+			"commandName": "Project",
+			"dotnetRunMessages": true,
+			"launchBrowser": false,
+			"launchUrl": "umbraco",
+			"applicationUrl": "http://localhost:44301",
+			"environmentVariables": {
+				"ASPNETCORE_ENVIRONMENT": "Development"
+			}
+		}
+	}
+}

@@ -1,0 +1,18 @@
+<Project>
+
+	<!--
+		NuGet imports this file into every project that references the package, directly or transitively.
+
+		It replaces the buildTransitive props the static web assets SDK would generate (the package csproj sets
+		StaticWebAssetsDisableProjectBuildTransitivePropsFileGeneration) and keeps that file's only line: the import of the
+		SDK-generated chain buildMultiTargeting -> build -> Microsoft.AspNetCore.StaticWebAssets(.Endpoints).props, which
+		serves /App_Plugins/UmbracoCommunityPropertyVisibility from the package. It then adds the JSON schemas.
+
+		Only valid inside the nupkg: a ProjectReference gets static web assets from the project itself, so the test site
+		imports Umbraco.Community.PropertyVisibility.JsonSchemas.props directly.
+	-->
+	<Import Project="$(MSBuildThisFileDirectory)..\buildMultiTargeting\Umbraco.Community.PropertyVisibility.props" />
+
+	<Import Project="$(MSBuildThisFileDirectory)Umbraco.Community.PropertyVisibility.JsonSchemas.props" />
+
+</Project>

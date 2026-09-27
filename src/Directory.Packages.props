@@ -1,0 +1,39 @@
+<Project>
+
+	<PropertyGroup>
+		<ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+		<!--
+			The supported Umbraco range. Override for a one-off build against one exact version: dotnet build "-p:UmbracoCmsVersion=[17.7.0]"
+			(a bare 17.7.0 is a minimum: NuGet picks the lowest published version at or above it).
+		-->
+		<UmbracoCmsVersion Condition="'$(UmbracoCmsVersion)' == ''">[17.6.2, 18.0.0)</UmbracoCmsVersion>
+	</PropertyGroup>
+
+	<ItemGroup Label="Umbraco">
+		<PackageVersion Include="Umbraco.Cms" Version="$(UmbracoCmsVersion)" />
+		<PackageVersion Include="Umbraco.Cms.Web.Common" Version="$(UmbracoCmsVersion)" />
+		<PackageVersion Include="Umbraco.Cms.Api.Common" Version="$(UmbracoCmsVersion)" />
+		<PackageVersion Include="Umbraco.Cms.Api.Management" Version="$(UmbracoCmsVersion)" />
+		<PackageVersion Include="Umbraco.Cms.Web.Website" Version="$(UmbracoCmsVersion)" />
+	</ItemGroup>
+
+	<ItemGroup Label="Test site">
+		<PackageVersion Include="uSync" Version="17.4.2" />
+		<PackageVersion Include="Microsoft.ICU.ICU4C.Runtime" Version="72.1.0.3" />
+	</ItemGroup>
+
+	<ItemGroup Label="Tests">
+		<PackageVersion Include="NUnit" Version="3.14.0" />
+		<PackageVersion Include="NUnit3TestAdapter" Version="6.3.0" />
+		<PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.10.1" />
+		<PackageVersion Include="Moq" Version="4.20.72" />
+		<!-- Follows UmbracoCmsVersion, so a build against another Umbraco version does not mix two versions in the test graph -->
+		<PackageVersion Include="Umbraco.Cms.Tests" Version="$(UmbracoCmsVersion)" />
+	</ItemGroup>
+
+	<ItemGroup Label="Tools and tests">
+		<!-- The schema generator writes the JSON schemas with it; the unit tests validate the samples against them with it (MIT) -->
+		<PackageVersion Include="NJsonSchema" Version="11.6.1" />
+	</ItemGroup>
+
+</Project>

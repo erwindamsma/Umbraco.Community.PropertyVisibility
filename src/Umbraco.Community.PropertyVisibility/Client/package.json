@@ -1,0 +1,24 @@
+{
+	"name": "umbraco-community-property-visibility",
+	"private": true,
+	"version": "0.0.0",
+	"type": "module",
+	"engines": {
+		"node": ">=24.13"
+	},
+	"scripts": {
+		"watch": "tsc && vite build --watch --mode development",
+		"build": "tsc && vite build",
+		"typecheck": "tsc --noEmit",
+		"generate-client": "node scripts/generate-openapi.js https://localhost:44300/umbraco/swagger/property-visibility/swagger.json"
+	},
+	"devDependencies": {
+		"@hey-api/openapi-ts": "^0.85.2",
+		"@umbraco-cms/backoffice": "^17.6.2",
+		"typescript": "^5.9.3",
+		"vite": "^7.3.1"
+	},
+	"allowScripts": {
+		"esbuild": true
+	}
+}

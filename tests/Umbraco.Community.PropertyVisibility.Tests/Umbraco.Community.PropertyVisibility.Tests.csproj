@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>net10.0</TargetFramework>
+		<RootNamespace>Umbraco.Community.PropertyVisibility.Tests</RootNamespace>
+		<IsPackable>false</IsPackable>
+		<IsTestProject>true</IsTestProject>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Microsoft.NET.Test.Sdk" />
+		<PackageReference Include="NUnit" />
+		<PackageReference Include="NUnit3TestAdapter" />
+		<PackageReference Include="Moq" />
+		<!-- ContentTypeBuilder, PropertyGroupBuilder, PropertyTypeBuilder: pure in-memory Umbraco models -->
+		<PackageReference Include="Umbraco.Cms.Tests" />
+		<!-- Validates the configuration samples against the committed JSON schemas (the schema generator uses it too) -->
+		<PackageReference Include="NJsonSchema" />
+		<!--
+			Umbraco.Cms.Targets arrives transitively through Umbraco.Cms and would copy the appsettings and package JSON
+			schemas into this folder on every build; a test project needs none of its MSBuild logic.
+		-->
+		<PackageReference Include="Umbraco.Cms.Targets" VersionOverride="$(UmbracoCmsVersion)" ExcludeAssets="all" PrivateAssets="all" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\..\src\Umbraco.Community.PropertyVisibility\Umbraco.Community.PropertyVisibility.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<Using Include="NUnit.Framework" />
+	</ItemGroup>
+
+</Project>

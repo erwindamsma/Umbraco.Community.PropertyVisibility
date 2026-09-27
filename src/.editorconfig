@@ -1,0 +1,18 @@
+# Code style for everything under src/
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+indent_style = tab
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+# Markdown uses trailing spaces for line breaks
+[*.md]
+trim_trailing_whitespace = false
+
+# YAML does not allow tabs
+[*.{yml,yaml}]
+indent_style = space
+indent_size = 2

@@ -1,0 +1,10 @@
+# GitHub Discussions is not enabled for this repository, so questions go to issues through the Question template.
+# When Discussions is enabled, replace that template with a contact link to the Discussions page.
+blank_issues_enabled: false
+contact_links:
+  - name: "Configuration reference"
+    url: "https://github.com/erwindamsma/Umbraco.Community.PropertyVisibility/blob/main/docs/configuration.md"
+    about: "Every option, the matching rules, blocks and every issue code."
+  - name: "Report a security vulnerability"
+    url: "https://github.com/erwindamsma/Umbraco.Community.PropertyVisibility/security/advisories/new"
+    about: "Report vulnerabilities privately, never in a public issue."

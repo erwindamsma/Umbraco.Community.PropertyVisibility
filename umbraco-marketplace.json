@@ -1,0 +1,31 @@
+{
+  "$schema": "https://marketplace.umbraco.com/umbraco-marketplace-schema.json",
+  "Title": "Property Visibility",
+  "Description": "Hide properties, groups and tabs per site in the Umbraco backoffice. Rules are keyed by document type or element type, live in appsettings or a JSON file that reloads without a restart, apply to documents and to blocks, and are checked by a health check. Hiding changes what editors see, not what they may do: hidden values are still saved and still available through the Management API and the Delivery API.",
+  "Category": "Editor Tools",
+  "PackageType": "Package",
+  "LicenseTypes": ["Free"],
+  "Tags": ["backoffice", "properties", "tabs", "groups", "multisite", "blocks", "editor-experience"],
+  "DocumentationUrl": "https://github.com/erwindamsma/Umbraco.Community.PropertyVisibility/blob/main/docs/configuration.md",
+  "IssueTrackerUrl": "https://github.com/erwindamsma/Umbraco.Community.PropertyVisibility/issues",
+  "AuthorDetails": {
+    "Name": "Erwin Damsma",
+    "Url": "https://github.com/erwindamsma",
+    "ImageUrl": "https://github.com/erwindamsma.png",
+    "SyncContributorsFromRepository": true
+  },
+  "Screenshots": [
+    {
+      "ImageUrl": "https://raw.githubusercontent.com/erwindamsma/Umbraco.Community.PropertyVisibility/main/docs/screenshots/before-after.png",
+      "Caption": "One document type on two sites: the Seo tab, the banner image and the related links only where they are needed"
+    },
+    {
+      "ImageUrl": "https://raw.githubusercontent.com/erwindamsma/Umbraco.Community.PropertyVisibility/main/docs/screenshots/blocks.png",
+      "Caption": "Blocks follow the site of the document that holds them: the promo banner's overlay colour is hidden on one site only"
+    },
+    {
+      "ImageUrl": "https://raw.githubusercontent.com/erwindamsma/Umbraco.Community.PropertyVisibility/main/docs/screenshots/health-check.png",
+      "Caption": "The health check reports rules that do not resolve, with an issue code and a suggested fix"
+    }
+  ]
+}
