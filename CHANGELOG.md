@@ -6,6 +6,8 @@ The release workflow publishes the section whose heading matches the tag (`## [1
 
 ## [Unreleased]
 
+## [1.0.0-rc.1] - 2026-09-29
+
 The first release, published as `1.0.0-rc.1`. It supports Umbraco 17.6.2 and later 17.x versions (verified on 17.6.2 and 17.7.0) on .NET 10.
 
 ### Added
