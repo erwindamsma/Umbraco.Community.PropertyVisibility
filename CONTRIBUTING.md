@@ -121,9 +121,9 @@ The pull request template holds this checklist:
 
 The order matters, because the package and its readmes link to the repository:
 
-1. Before the repository becomes public, enable Private vulnerability reporting (Settings > Code security) and check that it is on: it is the only reporting channel [SECURITY.md](SECURITY.md) offers, and GitHub leaves it off by default.
-2. In the release commit, rename `## [Unreleased]` in `CHANGELOG.md` to `## [<version>] - <date>` and add an empty `## [Unreleased]` above it: `release.yml` publishes that section as the release notes.
-3. Make the repository public and push `main`, with `main` as the default branch. The NuGet readme, the Marketplace listing, the health check's documentation links and the compatibility link compiled into the package all point to files on `main`.
+1. Make the repository public, with `main` as the default branch. The NuGet readme, the Marketplace listing, the health check's documentation links and the compatibility link compiled into the package all point to files on `main`.
+2. Right after that, before pushing a tag, enable Private vulnerability reporting (Settings > Advanced Security) and check that it is on: it is the only reporting channel [SECURITY.md](SECURITY.md) offers, GitHub leaves it off by default, and a private repository on the free plan does not offer it.
+3. In the release commit, rename `## [Unreleased]` in `CHANGELOG.md` to `## [<version>] - <date>` and add an empty `## [Unreleased]` above it: `release.yml` publishes that section as the release notes. Push `main` and wait for `ci.yml` to pass.
 4. Only then push the tag `v<version>`: `release.yml` pushes the package to NuGet and creates the GitHub release.
 
 ## What logs and console output contain
