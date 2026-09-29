@@ -9,6 +9,7 @@ artifacts/
 # IDE and user files
 .vs/
 .idea/
+.vscode/
 *.user
 *.suo
 *.DotSettings.user
@@ -23,10 +24,17 @@ node_modules/
 **/umbraco/Data/
 **/umbraco/Logs/
 **/umbraco/models/
+**/umbraco/mediacache/
+**/umbraco/Licenses/
 **/wwwroot/media/
 *.sqlite.db
 *.sqlite.db-shm
 *.sqlite.db-wal
+*.sqlite
+*.db
+*.mdf
+*.ldf
+*.bak
 
 # JSON schemas that Umbraco.Cms.Targets copies into the test site on build. Anchored to the test site: the package
 # project's own generated schemas (appsettings-schema.Umbraco.Community.PropertyVisibility.json,
@@ -44,6 +52,15 @@ src/Umbraco.Community.PropertyVisibility.TestSite/PropertyVisibility.config-sche
 TestResults/
 test-results/
 playwright-report/
+blob-report/
+*.trx
+*.coverage
+*.cobertura.xml
+coverage/
+*.log
+# Playwright sign-in state, should a setup project ever save one
+**/.auth/
+storageState*.json
 # The acceptance suite's copy of the test site's appsettings.json while it runs (restored after an interrupted run)
 .run-state/
 
@@ -53,9 +70,18 @@ playwright-report/
 .env.*
 src/Umbraco.Community.PropertyVisibility/appsettings.json
 src/Umbraco.Community.PropertyVisibility/appsettings.*.json
+# The test site tracks only appsettings.json and appsettings.Development.json; other environments stay local.
+src/Umbraco.Community.PropertyVisibility.TestSite/appsettings.*.json
+!src/Umbraco.Community.PropertyVisibility.TestSite/appsettings.Development.json
+secrets.json
+*.pubxml
+*.pubxml.user
+*.lic
 *.pfx
 *.pem
 *.key
+*.p12
+*.crt
 
 # OS
 .DS_Store
