@@ -25,7 +25,7 @@ env:
 jobs:
   build-test-pack:
     name: Build, test and pack
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
       - name: Checkout
@@ -82,7 +82,7 @@ jobs:
   acceptance:
     name: Acceptance tests (Playwright)
     needs: build-test-pack
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 45
     env:
       PV_PORT: 44300

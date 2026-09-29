@@ -35,7 +35,7 @@ env:
 jobs:
   compat:
     name: Build and test against Umbraco 17.x
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 60
     outputs:
       umbraco-version: ${{ steps.resolve.outputs.version }}
@@ -127,7 +127,7 @@ jobs:
     name: Open or update the compatibility issue
     needs: compat
     if: ${{ always() && (needs.compat.result == 'failure' || (needs.compat.result == 'cancelled' && github.event_name == 'schedule')) }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
       issues: write
