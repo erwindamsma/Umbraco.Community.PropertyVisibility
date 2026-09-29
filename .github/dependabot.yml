@@ -1,9 +1,15 @@
 version: 2
+# Major updates of the build and test tools are skipped on purpose: each one is done as a deliberate change with a full
+# browser test run, not merged from a bot pull request. Minor and patch updates arrive grouped, one pull request per
+# ecosystem, to keep the number of CI runs down.
 updates:
   - package-ecosystem: nuget
     directory: /
     schedule:
       interval: weekly
+    groups:
+      minor-and-patch:
+        update-types: ["minor", "patch"]
     ignore:
       # The Umbraco floor is a deliberate decision (widened only after the acceptance checklist runs);
       # Umbraco 18 is a separate major of this package.
@@ -11,23 +17,43 @@ updates:
       # uSync majors follow Umbraco majors (uSync 18 needs Umbraco 18), so a major update can never restore here.
       - dependency-name: "uSync"
         update-types: ["version-update:semver-major"]
+      # Umbraco.Cms.Tests 17.x (the test builders) depends on NUnit 3.
+      - dependency-name: "NUnit"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: npm
     directory: /src/Umbraco.Community.PropertyVisibility/Client
     schedule:
       interval: weekly
+    groups:
+      minor-and-patch:
+        update-types: ["minor", "patch"]
     ignore:
       # Tracks the Umbraco floor, bumped by hand together with the NuGet range.
       - dependency-name: "@umbraco-cms/backoffice"
+      # A new generator major means regenerating src/api, updating THIRD-PARTY-NOTICES.md and a full browser test.
+      - dependency-name: "@hey-api/openapi-ts"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+      # Compiler and bundler majors are upgraded deliberately, in step with Umbraco's own extension toolchain.
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "vite"
+        update-types: ["version-update:semver-major"]
 
   # The Playwright acceptance suite (@playwright/test is pinned to an exact version; CI installs the matching Chromium).
   - package-ecosystem: npm
     directory: /tests/Umbraco.Community.PropertyVisibility.AcceptanceTests
     schedule:
       interval: weekly
+    groups:
+      minor-and-patch:
+        update-types: ["minor", "patch"]
     ignore:
       # The typings follow the Node major of the toolchain (Node 24), bumped by hand together with the workflows.
       - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
+      # Kept on the same TypeScript major as the client.
+      - dependency-name: "typescript"
         update-types: ["version-update:semver-major"]
 
   # Also keeps release.yml's SHA pins current: it updates the commit SHA and the version in the trailing comment together.
@@ -35,3 +61,6 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    groups:
+      minor-and-patch:
+        update-types: ["minor", "patch"]
