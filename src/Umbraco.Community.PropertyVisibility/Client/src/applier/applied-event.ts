@@ -1,7 +1,7 @@
 import { APPLIED_EVENT_NAME } from '../constants.js';
 import { debugLog } from '../debug.js';
 
-/** What an applier works on: the document workspace, or the content or settings half of a block. */
+/** What an applier works on: the document workspace, or a block's Content or Settings view. */
 export type UmbPropertyVisibilityAppliedTarget = 'document' | 'block-content' | 'block-settings';
 
 /**
@@ -20,7 +20,7 @@ export interface UmbPropertyVisibilityAppliedEventDetail {
 	 * Normally every key of the response; fewer when hiding tabs and groups is unavailable in the running Umbraco.
 	 */
 	containerCount: number;
-	/** Which applier finished: the document workspace, or the content or settings half of a block. */
+	/** Which applier finished: the document workspace, or a block's Content or Settings view. */
 	target: UmbPropertyVisibilityAppliedTarget;
 }
 

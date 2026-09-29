@@ -229,6 +229,24 @@ The package depends on Umbraco `[17.6.2, 18.0.0)` and .NET 10. A later 17.x can 
 
 Not yet. 1.x supports Umbraco 17 only and declares `[17.6.2, 18.0.0)`. Umbraco 18 support is planned as a 2.0 release, because Umbraco 18 changes backoffice and API registration details that 1.x relies on. To move a site to Umbraco 18 before 2.0 exists, remove the package first. It stores nothing in the database, so removing it only makes the hidden fields visible again; keep the `PropertyVisibility` section or the rules file for later.
 
+## Support and maintenance
+
+Property Visibility is an actively maintained community package.
+
+- 1.x follows Umbraco 17, a long-term support release. A new 17.x minor is listed under [Supported Umbraco versions](#supported-umbraco-versions) once it has passed the checks in [docs/compatibility.md](docs/compatibility.md); `compat.yml` runs the automated part against the latest 17.x every week.
+- Umbraco 18 support is planned as 2.0, without a date (see [Upgrading to Umbraco 18](#upgrading-to-umbraco-18)).
+- Bugs and questions go in [GitHub issues](https://github.com/erwindamsma/Umbraco.Community.PropertyVisibility/issues). Report security issues privately, see [SECURITY.md](SECURITY.md).
+
+## Alternatives
+
+Umbraco itself and other packages cover related needs:
+
+- **Per user group instead of per site**: Umbraco's Document Property Value permissions on user groups (properties only), or [Umbraco.Community.AdminOnly](https://www.nuget.org/packages/Umbraco.Community.AdminOnly), which hides document types, tabs, properties and tree nodes from users who are not administrators.
+- **Depending on the value of another property** in the same document type: [Our.Umbraco.ConditionalDisplayers](https://www.nuget.org/packages/Our.Umbraco.ConditionalDisplayers).
+- **The same properties hidden on every site, managed in a dashboard**: [Our.Umbraco.BlockFieldVisibility](https://www.nuget.org/packages/Our.Umbraco.BlockFieldVisibility) hides properties of a page type or a Block List block type wherever that type is used.
+
+Property Visibility fits when several sites share document or element types and properties, tabs or groups should disappear on some of those sites.
+
 ## Contributing
 
 Issues and pull requests are welcome, see [CONTRIBUTING.md](CONTRIBUTING.md). Building from source needs the .NET 10 SDK and Node 24 LTS (24.13 or later). `dotnet build Umbraco.Community.PropertyVisibility.slnx` builds the package, its backoffice client and the test site (skip the client with `-p:SkipClientBuild=true`); `dotnet run --project src/Umbraco.Community.PropertyVisibility.TestSite --launch-profile https` starts the test site on https://localhost:44300/umbraco. Tests are described in [docs/testing.md](docs/testing.md). Report security issues privately, see [SECURITY.md](SECURITY.md).

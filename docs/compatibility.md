@@ -7,11 +7,11 @@ The package depends on `Umbraco.Cms.Web.Common`, `Umbraco.Cms.Api.Common` and `U
 | Umbraco | Status | Checked | How |
 |---|---|---|---|
 | 17.6.2 | Verified (dependency floor) | 2026-09-28 | Unit tests, the JSON schema check and the whole Playwright acceptance suite (`tests/Umbraco.Community.PropertyVisibility.AcceptanceTests`) against the SQLite test site on a clean database (uSync first-boot import), run locally on Windows and on Linux (WSL); the manual cases in `docs/testing.md` (run 2026-09-27) |
-| 17.7.0 | Verified | 2026-09-28 | The same checks with the package, the test site and the unit tests built with `-p:UmbracoCmsVersion=[17.7.0]` (every `Umbraco.Cms` package at 17.7.0), run locally on Windows; the manual cases in `docs/testing.md` on that build (run 2026-09-28); the client type-checked against `@umbraco-cms/backoffice` 17.7.0 (`build/ci/client-typecheck.sh`); the backoffice sources the client relies on compared with 17.6.2 (below) |
+| 17.7.0 | Verified | 2026-09-29 | The same checks with the package, the test site and the unit tests built with `-p:UmbracoCmsVersion=[17.7.0]` (every `Umbraco.Cms` package at 17.7.0), run locally on Windows (2026-09-28) and on Linux by the first `compat.yml` run on GitHub ([run 36626416072](https://github.com/erwindamsma/Umbraco.Community.PropertyVisibility/actions/runs/36626416072), 2026-09-29: build, client type check, unit tests, schema check and the whole Playwright suite, with only the opt-in measurement spec skipped); the manual cases in `docs/testing.md` on that build (run 2026-09-28); the client type-checked against `@umbraco-cms/backoffice` 17.7.0 (`build/ci/client-typecheck.sh`); the backoffice sources the client relies on compared with 17.6.2 (below) |
 | 17.0 to 17.6.1 | Not supported | | Below the dependency floor: the backoffice APIs the client relies on (`configureClient` on the auth context, the property view guard, cache-busted package URLs) are verified on 17.6.2 and 17.7.0 only |
 | 18.x | Not supported | | Planned as a 2.0 release |
 
-Both rows were verified on a local machine before the first release: 17.6.2 on Windows and on Linux (WSL), 17.7.0 on Windows. On GitHub, `ci.yml` runs the automated checks on every pull request and `compat.yml` repeats them every week against the latest 17.x (see [Recurring check](#recurring-check)).
+Before the first release, 17.6.2 was verified on a local machine on Windows and on Linux (WSL), and 17.7.0 on Windows and, through `compat.yml`, on Linux on GitHub. On GitHub, `ci.yml` runs the automated checks against 17.6.2 on every pull request and push to `main`, and `compat.yml` repeats them every week against the latest 17.x (see [Recurring check](#recurring-check)).
 
 Tabs and groups are hidden with a backoffice method (`removeContainer` on the content type structure) that is public but not documented as an extension point. Each new Umbraco minor is re-checked before it is marked verified here.
 
@@ -21,7 +21,7 @@ The package is designed for these cases, but no check has run them yet:
 
 - SQL Server: every run used SQLite.
 - Load balancing: the configuration analysis is designed to run on every server.
-- macOS, and Umbraco 17.7.0 on Linux.
+- macOS.
 - Docker bind mounts, volumes and network shares with `DOTNET_USE_POLLING_FILE_WATCHER=1`: polling itself was checked, but not on such a mount.
 - An Umbraco version without `removeContainer`: properties stay hidden and the backoffice shows one warning, by design. The warning also appears when `removeContainer` throws a `TypeError` (a changed signature); any other error skips that tab or group, is logged with the [debug flag](configuration.md#debugging-in-the-browser) and is tried again on the next structure change.
 - The startup warning on an Umbraco major other than 17.

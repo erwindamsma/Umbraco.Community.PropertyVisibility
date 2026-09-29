@@ -1,7 +1,7 @@
 import type { Page, Request, Response } from '@playwright/test';
 import { APPLIED_EVENT, DIRECT_CALL_HEADER, HIDDEN_FIELDS_PATH } from './env.js';
 
-/** Which applier finished: the document workspace, or the content or settings half of a block. */
+/** Which applier finished: the document workspace, or a block's Content or Settings view. */
 export type AppliedTarget = 'document' | 'block-content' | 'block-settings';
 
 /** One `umbraco-community-property-visibility:applied` event as recorded in the page. */
