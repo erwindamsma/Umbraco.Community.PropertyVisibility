@@ -10,7 +10,7 @@ Hide properties, groups and tabs per site in the Umbraco backoffice.
 When several sites in one Umbraco installation share a document type, some of its fields often matter on one site only. Property Visibility hides those fields from editors, per site, without a second document type.
 
 - Hides properties, tabs (with every group and property in them) and groups, by alias, per document type or element type.
-- Rules apply on every site, or on one site. A site is a root node, identified by its key, its name, or as the default site.
+- Rules apply on every site, on one site, or on the sites that include a shared rule set. A site is a root node, identified by its key, its name, or as the default site.
 - The same rules work inside blocks: Block List, Block Grid, Single Block and blocks in the rich text editor, for the content and the settings of a block.
 - Rules live in appsettings or in a separate JSON file, reload without a restart, and come with JSON schemas for IntelliSense.
 - A health check reports every root node, site or alias in the rules that does not resolve, with stable issue codes.
@@ -102,17 +102,35 @@ Save the file (no restart needed) and reopen a document in the backoffice. On ev
 
 The site label (`corporate`, `campaign`, ...) is free text (without `:`) that appears in diagnostics. Each site names its root node with `RootNodeKey` (recommended: it survives renames), `RootNodeName`, or `IsDefault` for every root that no other site matches.
 
+Rules that several sites share can be written once, in a rule set that each of those sites includes:
+
+```json
+"RuleSets": {
+  "simplePages": {
+    "ContentTypes": {
+      "landingPage": { "Containers": ["seoTab", "settingsTab/advanced"] }
+    }
+  }
+},
+"Sites": {
+  "corporate": { "RootNodeKey": "5c2b4d7e-9f1a-4c3e-8b6d-2a1f0e9d8c7b", "Include": ["simplePages"] },
+  "campaign": { "RootNodeName": "Campaign site", "Include": ["simplePages"] }
+}
+```
+
+A root node that is not a site, such as a settings or shared content root, gets a site with only its `RootNodeKey` and no rules. Without one the health check reports the root (`PV103`); a default site would silence that warning for every root, including a new site added later without rules. Details: [rule sets](docs/configuration.md#rule-sets) and [roots that are not sites](docs/configuration.md#roots-that-are-not-sites).
+
 The rules can live in one of two places:
 
 | | appsettings (section `PropertyVisibility`) | Rules file (`PropertyVisibility.config.json`) |
 |---|---|---|
-| Holds | every option | `ContentTypes`, `Sites` and `HideEmptiedContainers` |
+| Holds | every option | `ContentTypes`, `RuleSets`, `Sites` and `HideEmptiedContainers` |
 | Where | any .NET configuration source: `appsettings.json`, `appsettings.{Environment}.json`, environment variables | the content root, next to `appsettings.json`; another path with the `ConfigFile` option |
 | When both define rules | ignored; `PV301` warns | wins |
 | A broken edit | a value that cannot be bound or fails validation: nothing is hidden until it is fixed (`PV008`); invalid JSON in `appsettings.json` is handled by .NET configuration, not by this package | invalid JSON or an unknown key keeps the last valid version (`PV001`, `PV002`); rules that fail validation hide nothing (`PV008`) |
 | Reload | on save, no restart | on save, no restart |
 
-When the rules file exists and is valid, its `ContentTypes` and `Sites` replace the appsettings ones as a whole: nothing is merged. `Enabled` (the kill switch) and `ConfigFile` can only be set in appsettings. On Docker bind mounts, volumes and network shares, file change events may not arrive; set `DOTNET_USE_POLLING_FILE_WATCHER=1` so edits to the rules file are picked up. A rules file that is a symbolic link (a Kubernetes ConfigMap or Secret, or a link into a shared folder) is not reloaded by the default watcher either, and nothing reports it: point `ConfigFile` at the real file, or set `DOTNET_USE_POLLING_FILE_WATCHER=1`. When the file cannot be watched at all, the health check shows `PV304`.
+When the rules file exists and is valid, its `ContentTypes`, `RuleSets` and `Sites` replace the appsettings ones as a whole: nothing is merged. `Enabled` (the kill switch) and `ConfigFile` can only be set in appsettings. On Docker bind mounts, volumes and network shares, file change events may not arrive; set `DOTNET_USE_POLLING_FILE_WATCHER=1` so edits to the rules file are picked up. A rules file that is a symbolic link (a Kubernetes ConfigMap or Secret, or a link into a shared folder) is not reloaded by the default watcher either, and nothing reports it: point `ConfigFile` at the real file, or set `DOTNET_USE_POLLING_FILE_WATCHER=1`. When the file cannot be watched at all, the health check shows `PV304`.
 
 The package ships a JSON schema for each place. After the first build, editors that follow the `"$schema": "appsettings-schema.json"` line of the Umbraco template (Visual Studio, VS Code, Rider) complete and check the `PropertyVisibility` section. Start a rules file with `"$schema": "./PropertyVisibility.config-schema.json"`; the build copies that schema next to it. The copies are build output: add `PropertyVisibility.config-schema.json` to the site's `.gitignore`, which already ignores `appsettings-schema*.json`.
 
@@ -131,7 +149,7 @@ For each document the package finds the root node (the document's top-level ance
 
 A document created at the content root has no root before its first save, so it gets the default site; after the save it is its own root. Documents in the recycle bin match no site, not even the default one, and get the top-level rules only.
 
-The rules for a document or a block are the union of the top-level `ContentTypes` entry and the matched site's entry for its content type and for each of its compositions. Hiding only adds up: no rule can show what another rule hides. With `HideEmptiedContainers` (on by default), a group whose properties are all hidden disappears too, and so does a tab whose own properties and groups are all hidden.
+The rules for a document or a block are the union of the top-level `ContentTypes` entry, the matched site's entry and the entries of the rule sets that site includes, for its content type and for each of its compositions. Hiding only adds up: no rule can show what another rule hides. With `HideEmptiedContainers` (on by default), a group whose properties are all hidden disappears too, and so does a tab whose own properties and groups are all hidden.
 
 Compositions: a rule keyed by a composition applies wherever the composition is used, to the composition itself and to every document or element type composed of it, directly or through another composition. A parent document type counts as a composition. The rule resolves against the composition's own properties, tabs and groups, so `"siteSettings": { "Containers": ["legacyTab"] }` removes the Legacy tab that `siteSettings` contributes, but not a tab with the same alias that the composing type defines itself. To hide something on one composing type only, key the rule by that type. The health check lists the types each composition rule reaches (`PV205`). Details: [docs/configuration.md](docs/configuration.md#compositions).
 
@@ -163,10 +181,10 @@ Details: [docs/configuration.md](docs/configuration.md#blocks).
 
 Settings > Health Check > Configuration > "Property Visibility configuration" checks the rules against the site it runs on:
 
-- a `RootNodeKey` that is not a root node, a `RootNodeName` that matches no root, and a root that no site matches;
+- a `RootNodeKey` that is not a root node, a `RootNodeName` that matches no root, a root that no site matches, and a rule set that no site includes;
 - a content type, property or container alias that does not exist, with a "Did you mean" suggestion or the list of the type's tab and group aliases;
-- hidden properties that are mandatory (`PV203`);
-- configuration errors: invalid JSON or an unknown key in the rules file, a site without an identity, two sites for one root, more than one default site;
+- hidden properties that are mandatory (`PV203`), and entries that hide nothing (`PV206`, informational);
+- configuration errors: invalid JSON or an unknown key in the rules file, a site without an identity, two sites for one root, more than one default site, a rule set name in `Include` that does not exist;
 - a summary with the rules source, when the rules were loaded, a rules hash to compare servers, and the Umbraco version against the tested versions.
 
 Every issue has a stable code (`PV001` to `PV304`) whose meaning never changes. The same issues are written to the server log once per configuration change, never per request. Every code is explained in [docs/configuration.md](docs/configuration.md#issue-codes).
@@ -179,9 +197,18 @@ To see what the package does in the backoffice, run this in the browser console:
 localStorage['Umbraco.Community.PropertyVisibility.Debug'] = '1'
 ```
 
-Every hidden-fields response and every completed pass is then logged at the Verbose level with the prefix `[PropertyVisibility]`: the matched site and why it matched, the warnings, and how many properties, tabs and groups were hidden. Remove the key to stop. The log never adds the key or name of the document's site root; when the open document is itself a root node, its own key is logged as the document key.
+Every hidden-fields response and every completed pass is then logged at the Verbose level with the prefix `[PropertyVisibility]`: the matched site and why it matched, the warnings, and how many properties, tabs and groups were hidden. That summary is in the text of the line, so it survives copying from the console (`site 'corporate' (Key), 3 properties, 2 containers, no warnings`); the object after it has the details. Remove the key to stop. The log never adds the key or name of the document's site root; when the open document is itself a root node, its own key is logged as the document key.
 
 After every completed pass the backoffice dispatches `umbraco-community-property-visibility:applied` on `window`, with `documentKey`, `contentTypeKey`, `propertyCount`, `containerCount` and `target` (`document`, `block-content` or `block-settings`). It is a stable integration point for tests and other packages. Details: [docs/configuration.md](docs/configuration.md#debugging-in-the-browser).
+
+## Moving from your own implementation
+
+Up to Umbraco 13, fields were often hidden per site by a `SendingContentNotification` handler (`EditorModelEventManager.SendingContentModel` on Umbraco 8) that removed properties and tabs from the editor model. Umbraco 14 and later have no such notification. To replace a handler like that, or other code of your own:
+
+1. Write its rules as configuration: a site per root node, and a [rule set](docs/configuration.md#rule-sets) for rules that several sites share.
+2. Open the health check and fix what it reports. `PV104`, `PV201` and `PV202` name content types, properties, tabs and groups that do not exist, so a rule that never matched anything in the old code, for example because a tab was renamed since, shows up here.
+3. Turn on the [debug flag](#debug-flag-and-the-applied-event), open a document of each site, and compare the matched site and the counts with what the old code hid.
+4. Remove the old code.
 
 ## Supported Umbraco versions
 

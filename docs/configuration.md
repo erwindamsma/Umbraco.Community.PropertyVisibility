@@ -62,14 +62,65 @@ Save the file and reload the backoffice. The keys are content type aliases: docu
 }
 ```
 
-The rules for a request are the top-level `ContentTypes` entries for the content type and for each of its compositions, united with the matched site's entries for the same types. Hiding is a union: a rule can only hide more, never show something another rule hides.
+The rules for a request are the top-level `ContentTypes` entries for the content type and for each of its compositions, united with the matched site's entries for the same types and those of the rule sets the site includes (see [Rule sets](#rule-sets)). Hiding is a union: a rule can only hide more, never show something another rule hides.
+
+## Rule sets
+
+Rules that several sites share can be written once, under `RuleSets`, and named in the `Include` of each site that uses them. The name (`simplePages`, ...) is free text; it may not contain `:`.
+
+```json
+{
+  "PropertyVisibility": {
+    "RuleSets": {
+      "simplePages": {
+        "ContentTypes": {
+          "landingPage": { "Containers": ["seoTab", "settingsTab/advanced"] },
+          "article": { "Containers": ["shareTab"] }
+        }
+      }
+    },
+    "Sites": {
+      "corporate": {
+        "RootNodeKey": "5c2b4d7e-9f1a-4c3e-8b6d-2a1f0e9d8c7b",
+        "Include": ["simplePages"],
+        "ContentTypes": {
+          "landingPage": { "Properties": ["bannerImage", "relatedLinks"] }
+        }
+      },
+      "campaign": {
+        "RootNodeName": "Campaign site",
+        "Include": ["simplePages"]
+      }
+    }
+  }
+}
+```
+
+Both sites hide the Seo tab and the Advanced group of a landing page and the Share tab of an article; Corporate site also hides the landing page's banner image and related links.
+
+- A site's rules are its own `ContentTypes` united with those of every rule set in its `Include`, and with the top-level `ContentTypes`. A rule set can only add to what a site hides.
+- `Include` names are matched case-insensitively. A name that matches no rule set is a configuration error (`PV009`): nothing is hidden until it is fixed.
+- A rule set cannot include another rule set.
+- The health check checks each rule set's entries once, however many sites include it, and reports a rule set that no site includes (`PV106`).
+
+## Roots that are not sites
+
+An installation with several sites often has root nodes that are not sites, such as a settings, tags or shared content root. Once `Sites` is not empty, the health check reports every root that no site matches (`PV103`). For a root that is not a site, add a site with only its `RootNodeKey`:
+
+```json
+"settings": { "RootNodeKey": "d3f1b2a4-6c5e-4f7a-8b9c-0e1d2c3b4a59" }
+```
+
+Its documents keep getting only the top-level `ContentTypes`, and a root added later that no site matches, such as a new site without rules yet, is still reported.
+
+A site marked `IsDefault` also ends `PV103`, but it takes every root that no other site matches, roots added later included, and applies its rules there. Use it for rules that should apply to all those roots, not to silence the warning.
 
 ## Compositions
 
 A rule keyed by a composition applies wherever the composition is used: to the composition itself and to every document or element type composed of it, directly or through another composition. A parent document type counts as a composition, because Umbraco models a child type's parent that way.
 
 - The rule resolves against the composition's own properties, tabs and groups, including what the composition gets from its own compositions. A container alias in it removes the composition's tab or group with that alias, not a tab or group with the same alias that the composing type adds itself or gets from another composition. The backoffice shows tabs with the same name as one tab, comparing names ignoring case, with runs of white space and the characters `_ . ! ~ * ( )` counted as `-` and apostrophes dropped (so "Legacy tab" and "legacy_tab" are one tab); when the composing type has a tab with the composition's tab name, that tab stays, with the composing type's own groups and properties in it.
-- The rules keyed by the type itself and by all its compositions, top-level and for the matched site, are united. `HideEmptiedContainers` then looks at the type as the editor sees it, so a tab that a composition's rule empties disappears.
+- The rules keyed by the type itself and by all its compositions, top-level, for the matched site and in the rule sets it includes, are united. `HideEmptiedContainers` then looks at the type as the editor sees it, so a tab that a composition's rule empties disappears.
 - An alias that does not exist on the composition is reported against the composition (`PV201`, `PV202`), in the API warnings and in the health check, even when the composing type has it. To hide something the composing type adds itself, key the rule by that type.
 - The health check lists every rule keyed by a composition, with the types it reaches (`PV205`, informational).
 
@@ -89,10 +140,13 @@ therefore removes the composition's copy of the Legacy tab, its General group an
 | `ConfigFile` | string | `PropertyVisibility.config.json` | Rules file, relative to the content root (an absolute path also works). An empty value turns the file source off. A missing file, or one with no JSON value (empty or only comments), is not an error: the appsettings rules apply. The file is watched and reloaded without a restart. Appsettings only. |
 | `HideEmptiedContainers` | bool | `true` | Also hide a group whose properties are all hidden, and a tab whose own properties and groups are all hidden. |
 | `ContentTypes` | object | empty | Rules for every site, keyed by content type alias. A key also reaches the types composed of it ([Compositions](#compositions)). |
+| `RuleSets` | object | empty | Rules that several sites share, keyed by a free name ([Rule sets](#rule-sets)). |
+| `RuleSets:<name>:ContentTypes` | object | empty | Rules of this set, keyed by content type alias. A key also reaches the types composed of it. |
 | `Sites` | object | empty | Rules per site, keyed by a free label. |
 | `Sites:<label>:RootNodeKey` | GUID | none | Key of the site's root node. Survives renames; the recommended identity. |
 | `Sites:<label>:RootNodeName` | string | none | Name of the site's root node (case-insensitive, trimmed). On a variant site: the default-culture name as of the last save. |
 | `Sites:<label>:IsDefault` | bool | `false` | The site whose rules apply to every root no other site matched. At most one. |
+| `Sites:<label>:Include` | string[] | empty | Names of the rule sets this site uses, matched case-insensitively. Their rules are united with the site's own. |
 | `Sites:<label>:ContentTypes` | object | empty | Rules for this site, keyed by content type alias. A key also reaches the types composed of it. |
 | `<content type>:Properties` | string[] | empty | Property aliases to hide (own or from a composition). |
 | `<content type>:Containers` | string[] | empty | Tabs and groups to hide, see the alias grammar. |
@@ -103,11 +157,11 @@ Aliases (content types, properties, containers) are matched case-insensitively. 
 
 | Situation | Rules in effect |
 |---|---|
-| No rules file (missing, empty, only comments, or `ConfigFile` is empty) | The appsettings `ContentTypes` and `Sites`. |
-| The rules file exists and is valid | The file's `ContentTypes` and `Sites` replace the appsettings ones wholesale (replace, not merge). `HideEmptiedContainers` from the file overrides appsettings only when the file sets it. |
+| No rules file (missing, empty, only comments, or `ConfigFile` is empty) | The appsettings `ContentTypes`, `RuleSets` and `Sites`. |
+| The rules file exists and is valid | The file's `ContentTypes`, `RuleSets` and `Sites` replace the appsettings ones wholesale (replace, not merge). `HideEmptiedContainers` from the file overrides appsettings only when the file sets it. |
 | The rules file exists but is invalid, too large or locked (`PV001`, `PV002`) | The last valid version of the same file: the last version that parsed and passed validation. If there is none, the file contributes no rules and the appsettings rules stay replaced, so nothing is hidden by rules until the file is fixed. |
 
-`Enabled` and `ConfigFile` can only be set in appsettings. When appsettings defines `ContentTypes` or `Sites` while the rules file exists, the file wins and `PV301` is logged as a warning, once per file content.
+`Enabled` and `ConfigFile` can only be set in appsettings. When appsettings defines `ContentTypes`, `RuleSets` or `Sites` while the rules file exists, the file wins and `PV301` is logged as a warning, once per file content.
 
 ## The rules file
 
@@ -131,12 +185,12 @@ The rules file holds the same shape and names as the appsettings section, withou
 }
 ```
 
-- Allowed keys: `$schema` (optional, ignored when loading), `HideEmptiedContainers`, `ContentTypes` and `Sites`. `Enabled` and `ConfigFile` are rejected (`PV002`), and so is a `PropertyVisibility` wrapper around the rules.
+- Allowed keys: `$schema` (optional, ignored when loading), `HideEmptiedContainers`, `ContentTypes`, `RuleSets` and `Sites`. `Enabled` and `ConfigFile` are rejected (`PV002`), and so is a `PropertyVisibility` wrapper around the rules.
 - Keys are case-insensitive, so camelCase works. Comments, trailing commas and a UTF-8 byte order mark are accepted. A key given twice, even when the two differ only in case, is `PV001`.
 - Save the file as UTF-8. A file with a UTF-16 or UTF-32 byte order mark (what Windows PowerShell 5.1 `>` and `Out-File` write) is transcoded and loads too. The file may be at most 1 MiB; a larger one is `PV001` and is not read. A file whose size the file system does not report, such as a device or `/proc` file, is read only up to that limit.
 - An invalid file is reported with enough detail to fix it: `PV001` for invalid JSON (with line and position), a file that is not valid UTF-8, for example one saved as Windows-1252 (with the line and position of the first invalid byte), a value of the wrong type (with its JSON path), a duplicate key, a file over 1 MiB or a file that cannot be read; `PV002` for an unknown key, with its JSON path and a "Did you mean" suggestion. Every unknown key in the file is listed, not only the first. One error is logged per distinct broken content, and the last valid version of the file stays in effect.
 - A file that is still locked by the program that wrote it is read again automatically after 1, 2 and 5 seconds, then every 30 seconds until it can be read; releasing a lock raises no file change event, so without the retry the edit would wait for the next change. A file that cannot be read for a reason that time does not fix (access denied, a path that is too long) is not retried: it is read again on the next change of the file or of appsettings, or after a restart.
-- Rules that parse but break validation (`PV003` to `PV007`) behave like invalid appsettings: `PV008`, nothing is hidden (fail open) until they are fixed. Such a version never becomes the "last valid version": after a later syntax error the version before it applies again.
+- Rules that parse but break validation (`PV003` to `PV007`, `PV009`, `PV010`) behave like invalid appsettings: `PV008`, nothing is hidden (fail open) until they are fixed. Such a version never becomes the "last valid version": after a later syntax error the version before it applies again.
 
 The test site ships the sample above as `src/Umbraco.Community.PropertyVisibility.TestSite/PropertyVisibility.config.sample.json`, so appsettings stays its active source. Copy it to `PropertyVisibility.config.json` to switch the test site to the file.
 
@@ -163,7 +217,7 @@ A group inside a tab is only addressed by its full `tab/group` path; its local a
 
 ## Blocks
 
-Rules keyed by an element type alias apply inside blocks, exactly like rules for a document type: under the top-level `ContentTypes` for every site, or under a site's `ContentTypes`. Properties, tabs and groups are hidden the same way as on documents, including `HideEmptiedContainers`.
+Rules keyed by an element type alias apply inside blocks, exactly like rules for a document type: under the top-level `ContentTypes` for every site, under a site's `ContentTypes`, or in a rule set. Properties, tabs and groups are hidden the same way as on documents, including `HideEmptiedContainers`.
 
 ```json
 "corporate": {
@@ -222,11 +276,11 @@ A configuration that cannot be bound (a value of the wrong type such as `"IsDefa
 The package ships two JSON schemas, generated from the options model:
 
 - `appsettings-schema.Umbraco.Community.PropertyVisibility.json`: root `{ "PropertyVisibility": { ... } }`, merged into the site's `appsettings-schema.json`.
-- `PropertyVisibility.config-schema.json`: the rules file (optional `$schema` string, `HideEmptiedContainers`, `ContentTypes`, `Sites`).
+- `PropertyVisibility.config-schema.json`: the rules file (optional `$schema` string, `HideEmptiedContainers`, `ContentTypes`, `RuleSets`, `Sites`).
 
-On the first `dotnet build` after `dotnet add package`, Umbraco's build targets copy both into the site project and add the appsettings schema to the site's `appsettings-schema.json`. Editors that follow the Umbraco template's `"$schema": "appsettings-schema.json"` line (Visual Studio, VS Code, Rider) then complete and check the `PropertyVisibility` section: the options, `Sites` and their fields, `ContentTypes`, `Properties` and `Containers`, with descriptions and defaults. For the rules file, start it with `"$schema": "./PropertyVisibility.config-schema.json"`; that schema is copied next to it, into the content root. To edit a rules file outside a site project, point `$schema` at the copy for your version on GitHub: `https://raw.githubusercontent.com/erwindamsma/Umbraco.Community.PropertyVisibility/v<version>/src/Umbraco.Community.PropertyVisibility/PropertyVisibility.config-schema.json`, with the tag of the version you installed (for example `v1.0.0-rc.1`).
+On the first `dotnet build` after `dotnet add package`, Umbraco's build targets copy both into the site project and add the appsettings schema to the site's `appsettings-schema.json`. Editors that follow the Umbraco template's `"$schema": "appsettings-schema.json"` line (Visual Studio, VS Code, Rider) then complete and check the `PropertyVisibility` section: the options, `RuleSets`, `Sites` and their fields, `ContentTypes`, `Properties` and `Containers`, with descriptions and defaults. For the rules file, start it with `"$schema": "./PropertyVisibility.config-schema.json"`; that schema is copied next to it, into the content root. To edit a rules file outside a site project, point `$schema` at the copy for your version on GitHub: `https://raw.githubusercontent.com/erwindamsma/Umbraco.Community.PropertyVisibility/v<version>/src/Umbraco.Community.PropertyVisibility/PropertyVisibility.config-schema.json`, with the tag of the version you installed (for example `v1.0.0-rc.1`).
 
-- Both schemas are draft-04, like Umbraco's own. Option objects have `additionalProperties: false`, so an editor underlines a misspelled key. Dictionaries (`ContentTypes`, `Sites`) accept any key.
+- Both schemas are draft-04, like Umbraco's own. Option objects have `additionalProperties: false`, so an editor underlines a misspelled key. Dictionaries (`ContentTypes`, `RuleSets`, `Sites`) accept any key, so a rule set name in `Include` is only checked when the rules load (`PV009`).
 - Property names are PascalCase. Loading is case-insensitive, so a camelCase key still works at runtime, but the editor marks it as not allowed.
 - Defaults shown: `Enabled` true, `ConfigFile` `"PropertyVisibility.config.json"`, `HideEmptiedContainers` true, `IsDefault` false. In the rules file `HideEmptiedContainers` has no default: when unset, appsettings applies.
 - The rules file schema rejects `Enabled` and `ConfigFile`, matching `PV002` at load time.
@@ -239,7 +293,7 @@ Settings > Health Check > Configuration > "Property Visibility configuration" ch
 - The first line is a summary: Success when there is no error and no warning, otherwise Info with the counts. It shows the rules source (the rules file with its full path, appsettings, or none), when the rules were last loaded successfully (UTC), the rules hash of that load (compare it between servers), the number of sites and root nodes, and the Umbraco version against the tested versions. A load whose rules fail validation is not a successful load: while the configuration is invalid, the time and hash are those of the last load that passed, labelled "Last successful load".
 - After the summary comes one line per issue, errors first, each with its code, its configuration path and, where possible, a "Did you mean" suggestion.
 - The health check is available to every backoffice user with access to the Settings section (Umbraco's rule for all health checks), not only to administrators. Unlike the hidden-fields API, it shows those users root node names and keys (in `PV101`, `PV102`, `PV103` and `PV105`; `PV101` and `PV102` list every root), the site labels and the full server path of the rules file. Give the Settings section only to users who may see them.
-- Top-level `ContentTypes` entries are checked once, and each site's entries once per site. Property and container aliases are checked against the entry's own content type including its compositions, with the same case-insensitive matching the backoffice uses. For an entry keyed by a composition that is also the structure it resolves against in the types composed of it; the entry gets an informational `PV205` line listing those types.
+- Top-level `ContentTypes` entries and each rule set's entries are checked once, each site's entries once per site. An entry without properties and containers gets an informational `PV206` line and no other check, unless its content type does not exist (`PV104`). Property and container aliases are checked against the entry's own content type including its compositions, with the same case-insensitive matching the backoffice uses. For an entry keyed by a composition that is also the structure it resolves against in the types composed of it; the entry gets an informational `PV205` line listing those types.
 
 ## Logging
 
@@ -266,18 +320,22 @@ Codes never change meaning once released. The health check links every issue to 
 | `PV005` | Error | More than one site is marked `IsDefault`. | Keep `IsDefault` on one site. | Health check (with `PV008`), log |
 | `PV006` | Error | A container alias is not `tab`, `tab/group` or `group`: it is empty, or empty before or after its first `/`. | Use a tab alias before the first `/` and a group alias after it, neither empty. | Health check (with `PV008`), log |
 | `PV007` | Error | A site label contains `:`. | Rename the label. | Health check (with `PV008`), log |
-| `PV008` | Error | The configuration cannot be bound (an unknown appsettings key, or a value of the wrong type; the binder's message is included) or fails validation (`PV003` to `PV007` listed separately). Nothing is hidden. | Fix the named key or value. | Health check, log (at startup, and by the service on the next request), API warning |
+| `PV008` | Error | The configuration cannot be bound (an unknown appsettings key, or a value of the wrong type; the binder's message is included) or fails validation (`PV003` to `PV007`, `PV009` and `PV010` listed separately). Nothing is hidden. | Fix the named key or value. | Health check, log (at startup, and by the service on the next request), API warning |
+| `PV009` | Error | A site's `Include` names a rule set that does not exist under `RuleSets` (compared case-insensitively), with a "Did you mean" suggestion. | Correct the name, or add the rule set. | Health check (with `PV008`), log |
+| `PV010` | Error | A rule set name contains `:`. | Rename the rule set and the names that include it. | Health check (with `PV008`), log |
 | `PV101` | Warning | `RootNodeKey` is not a root node: the document is below a root, in the recycle bin, or does not exist. The issue lists every root with its name and key, and says whether the site still matches by name (or that another site holds that root by key) or as the default. | Use the root's key (suggested). | Health check, log |
 | `PV102` | Warning | `RootNodeName` matches no root node (compared case-insensitively and trimmed), or only a root that another site holds by `RootNodeKey`, so the site never applies to it. When no root matches, the issue lists every root with its name and key. | Use the suggested root name, switch to `RootNodeKey`, or remove a site left behind after moving its rules to a site with a key. | Health check, log |
-| `PV103` | Warning | A root node matches no site and no site is the default, so only the top-level rules apply to it. Only checked when `Sites` is not empty. | Add a site for it, or mark one site `IsDefault`. | Health check, log, API warning (without key or name) |
+| `PV103` | Warning | A root node matches no site and no site is the default, so only the top-level rules apply to it. Only checked when `Sites` is not empty. | Add a site with the root's `RootNodeKey`; for a root that is not a site, give that site no rules ([Roots that are not sites](#roots-that-are-not-sites)). An `IsDefault` site ends the warning too, but takes every root no other site matches, roots added later included. | Health check, log, API warning (without key or name) |
 | `PV104` | Warning | A configured content type alias is neither a document type nor an element type. | Use the suggested alias, or remove the entry. | Health check, log |
 | `PV105` | Warning | A site matched by `RootNodeKey`, but its `RootNodeName` differs from the root's current name. When that name is now another root's name, the issue says so: the other root does not match this site. | Update `RootNodeName` to the suggested current name, or remove it. | Health check, log, API warning (without key or name) |
+| `PV106` | Warning | A rule set is not included by any site, so its rules never apply. | Add it to the `Include` of the sites that should use it, or remove it. | Health check, log |
 | `PV201` | Warning | A property alias does not exist on the content type (own properties and compositions checked). | Use the suggested alias, or remove it. | Health check, log, API warning |
 | `PV202` | Warning | A container alias does not exist on the content type. The health check lists the available containers in `tab` and `tab/group` form, compositions included. | Use one of the listed aliases. | Health check, log, API warning |
 | `PV203` | Warning | A hidden property (hidden by alias or by its container) is mandatory, so editors cannot fill it in and publishing still requires a value. Umbraco saves the document and reports "Document could not be published"; no tab or group is marked invalid, because the property is hidden (in a block too). | Make the property optional, or stop hiding it. | Health check, log |
 | `PV204` | (API only) | The content type key of a hidden-fields request does not exist. | None; it is a request-time condition. | API warning |
 | `PV205` | Info | A content type entry is keyed by a composition (or a parent document type), so its rules also apply to every type composed of it, directly or transitively; the issue names those types (the first ten, and how many more). There the rules hide only what the composition contributes ([Compositions](#compositions)). | None; check that the listed types are the ones the rule should reach. To hide something on one of them only, key the rule by that type. | Health check, log (Information) |
-| `PV301` | Warning | Appsettings defines `ContentTypes` or `Sites` while the rules file is in use; the file wins. | Keep the rules in one source. | Log (when it loads), health check |
+| `PV206` | Info | A content type entry lists no properties and no containers (or is `null`), so it hides nothing. An entry whose content type does not exist is `PV104` instead; an empty entry gets no other check (no `PV205`). | Add the aliases to hide, or remove the entry. | Health check, log (Information) |
+| `PV301` | Warning | Appsettings defines `ContentTypes`, `RuleSets` or `Sites` while the rules file is in use; the file wins. | Keep the rules in one source. | Log (when it loads), health check |
 | `PV302` | Info | The package is disabled (`Enabled: false`). The rules are still checked. | Set `Enabled` to `true`. | Health check, log (Information), API warning |
 | `PV303` | Info for an untested 17.x, Warning for another major | The running Umbraco version is not in the tested list. | Check [compatibility.md](compatibility.md); report problems. | Health check, log |
 | `PV304` | Warning | The rules file cannot be watched: its folder does not exist or cannot be read, or the system's file watcher limit is reached. The file is still read on every rebuild, but edits take effect after a restart or an appsettings change; the next appsettings reload tries to watch it again. | Create the folder, raise the watcher limit, or set `DOTNET_USE_POLLING_FILE_WATCHER=1`. | Log (when the watch fails), health check |
@@ -303,9 +361,9 @@ Any approved backoffice user with Content section access can call the API for an
 
 Set `localStorage['Umbraco.Community.PropertyVisibility.Debug'] = '1'` in the backoffice (browser dev tools, Console). The flag is read each time something is logged, so it applies to the next response; reload to see the current document again. Remove the key or set it to anything else to turn logging off. With the flag on, the package writes `console.debug` lines prefixed with `[PropertyVisibility]`; show the Verbose level in the console to see them.
 
-- One line per hidden-fields response, with: the document key, the content type key, how the parent was sent (`not sent (existing document)`, `sent (new document)`, `created at the content root`; the parent key itself is never logged), `disabled`, the root resolution, the matched site's label and match reason, the warnings and the number of property and container keys.
+- One line per hidden-fields response. Its text ends with a summary, so a copied line, a screenshot or a captured log keeps it when the object after it shows as `Object`: `hidden fields for content type <key>: site 'corporate' (Key), 3 properties, 2 containers, no warnings`. Instead of the site it says `no site (root <resolution>)` when no site matched and `disabled` when the package is disabled; warnings are listed by code (`warnings PV201, PV202`). The object holds the document key, the content type key, how the parent was sent (`not sent (existing document)`, `sent (new document)`, `created at the content root`; the parent key itself is never logged), `disabled`, the root resolution, the matched site's label and match reason, the warnings and the number of property and container keys.
 - A failed request logs its error name, message and HTTP status. Nothing is hidden in that case (fail open). Without the flag, only the first failure after the backoffice is loaded is written to the console, as a warning.
-- One line per completed apply pass: `applied (document)`, `applied (block-content)` or `applied (block-settings)`, with the event detail described below.
+- One line per completed apply pass, with the counts in its text (`applied (document): 3 properties, 1 container`; `block-content` or `block-settings` for a block) and the event detail described below.
 - A line when a response is dropped because the editor moved to another document first (for a block: to another document, another parent anchor or another element type).
 
 The log never adds the key or name of the document's site root: the API does not return them, and the client logs only an explicit summary. When the open document is itself a root node, its own key is logged as the document key.

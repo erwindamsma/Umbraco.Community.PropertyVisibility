@@ -151,10 +151,15 @@ public sealed class ConfigurationAnalyzerTests
 		var invalid = new PropertyVisibilityOptions
 		{
 			ContentTypes = { ["landingPage"] = Block(containers: ["contentTab/"]) },
+			RuleSets =
+			{
+				["simplePages"] = new RuleSetOptions(),
+				["bad:name"] = new RuleSetOptions(),
+			},
 			Sites =
 			{
 				["noIdentity"] = new SiteVisibilityOptions(),
-				["first"] = new SiteVisibilityOptions { RootNodeKey = CorporateRoot, IsDefault = true },
+				["first"] = new SiteVisibilityOptions { RootNodeKey = CorporateRoot, IsDefault = true, Include = ["simplePage"] },
 				["second"] = new SiteVisibilityOptions { RootNodeKey = CorporateRoot, IsDefault = true },
 				["bad:label"] = new SiteVisibilityOptions { RootNodeName = "Campaign site" },
 			},
@@ -176,9 +181,11 @@ public sealed class ConfigurationAnalyzerTests
 					IssueCodes.MultipleDefaultSites,
 					IssueCodes.InvalidContainerAlias,
 					IssueCodes.InvalidSiteLabel,
+					IssueCodes.UnknownRuleSet,
+					IssueCodes.InvalidRuleSetName,
 				}));
 			Assert.That(analysis.Issues.All(issue => issue.Severity == IssueSeverity.Error), Is.True);
-			Assert.That(Single(analysis, IssueCodes.ConfigurationInvalid).Message, Does.Contain("5 validation errors are listed separately"));
+			Assert.That(Single(analysis, IssueCodes.ConfigurationInvalid).Message, Does.Contain("7 validation errors are listed separately"));
 			Assert.That(Single(analysis, IssueCodes.SiteWithoutIdentity).SiteLabel, Is.EqualTo("noIdentity"));
 			Assert.That(Single(analysis, IssueCodes.DuplicateSiteIdentity).SiteLabel, Is.EqualTo("second"));
 			Assert.That(Single(analysis, IssueCodes.MultipleDefaultSites).Path, Is.EqualTo("Sites"));
@@ -186,6 +193,12 @@ public sealed class ConfigurationAnalyzerTests
 			Assert.That(Single(analysis, IssueCodes.InvalidContainerAlias).Path, Is.EqualTo("ContentTypes:landingPage:Containers"));
 			Assert.That(Single(analysis, IssueCodes.InvalidSiteLabel).Message, Does.Contain("'bad:label'"));
 			Assert.That(Single(analysis, IssueCodes.InvalidSiteLabel).SiteLabel, Is.Null, "a label with a colon cannot be read back from its path");
+			Assert.That(Single(analysis, IssueCodes.UnknownRuleSet).Path, Is.EqualTo("Sites:first:Include"));
+			Assert.That(Single(analysis, IssueCodes.UnknownRuleSet).SiteLabel, Is.EqualTo("first"));
+			Assert.That(Single(analysis, IssueCodes.UnknownRuleSet).Message, Is.EqualTo("Site 'first' includes the rule set 'simplePage', which does not exist under RuleSets."));
+			Assert.That(Single(analysis, IssueCodes.UnknownRuleSet).Suggestion, Is.EqualTo("simplePages"), "the suggestion is split off the message");
+			Assert.That(Single(analysis, IssueCodes.InvalidRuleSetName).Path, Is.EqualTo("RuleSets:bad:name"));
+			Assert.That(Single(analysis, IssueCodes.InvalidRuleSetName).SiteLabel, Is.Null);
 		});
 	}
 
@@ -312,6 +325,40 @@ public sealed class ConfigurationAnalyzerTests
 			Assert.That(issue.Message, Does.Contain($"The root node 'Other site' ({OtherRoot}) matches no site and no site is the default"));
 			Assert.That(issue.Path, Is.EqualTo("Sites"));
 			Assert.That(issue.SiteLabel, Is.Null);
+		});
+	}
+
+	[Test]
+	public void PV103_suggests_a_site_without_rules_for_a_root_that_is_not_a_site()
+	{
+		_site.Roots((CorporateRoot, "Corporate site"), (CampaignRoot, "Campaign site"), (OtherRoot, "Settings"));
+		_site.Options.Sites.Remove("everythingElse");
+
+		ConfigurationAnalysisIssue issue = Single(Analyze(), IssueCodes.RootWithoutSite);
+
+		Assert.Multiple(() =>
+		{
+			Assert.That(issue.Message, Does.Contain("Add a site with this RootNodeKey; for a root that is not a site, such as a settings or shared content root, give that site no rules."));
+			Assert.That(issue.Message, Does.EndWith("A site marked IsDefault also ends this warning, but that site then takes every root no other site matches, roots added later included, and applies its rules there."));
+		});
+	}
+
+	[Test]
+	public void A_site_with_only_a_RootNodeKey_ends_PV103_for_its_root_and_a_root_added_later_is_still_PV103()
+	{
+		var newRoot = Guid.Parse("7d6c5b4a-3f2e-4d1c-8b0a-9f8e7d6c5b4a");
+		_site.Roots((CorporateRoot, "Corporate site"), (CampaignRoot, "Campaign site"), (OtherRoot, "Settings"));
+		_site.Options.Sites.Remove("everythingElse");
+		_site.Options.Sites["settings"] = new SiteVisibilityOptions { RootNodeKey = OtherRoot };
+
+		ConfigurationAnalysis withSettingsSite = Analyze();
+		_site.Roots((CorporateRoot, "Corporate site"), (CampaignRoot, "Campaign site"), (OtherRoot, "Settings"), (newRoot, "New site"));
+		ConfigurationAnalysis withNewRoot = Analyze();
+
+		Assert.Multiple(() =>
+		{
+			Assert.That(SiteIssueCodes(withSettingsSite), Is.Empty, "a site without rules is not an issue");
+			Assert.That(Single(withNewRoot, IssueCodes.RootWithoutSite).Message, Does.Contain($"The root node 'New site' ({newRoot}) matches no site"));
 		});
 	}
 
@@ -653,6 +700,140 @@ public sealed class ConfigurationAnalyzerTests
 			Assert.That(container.Message, Does.Contain("Container 'seoTab' in the global rules does not exist on content type 'siteSettings'"));
 			Assert.That(container.Message, Does.EndWith("Available containers: legacyTab, legacyTab/legacy."));
 		});
+	}
+
+	[Test]
+	public void A_rule_set_no_site_includes_is_PV106()
+	{
+		_site.Options.RuleSets["simplePages"] = new RuleSetOptions { ContentTypes = { ["landingPage"] = Block(containers: ["seoTab"]) } };
+		_site.Options.RuleSets["sharing"] = new RuleSetOptions { ContentTypes = { ["article"] = Block(containers: ["shareTab"]) } };
+		_site.Options.Sites["campaign"].Include = ["SHARING"];
+
+		ConfigurationAnalysis analysis = Analyze();
+
+		ConfigurationAnalysisIssue issue = Single(analysis, IssueCodes.UnusedRuleSet);
+		Assert.Multiple(() =>
+		{
+			Assert.That(issue.Severity, Is.EqualTo(IssueSeverity.Warning));
+			Assert.That(issue.Path, Is.EqualTo("RuleSets:simplePages"));
+			Assert.That(issue.SiteLabel, Is.Null);
+			Assert.That(issue.Message, Is.EqualTo("Rule set 'simplePages' is not included by any site, so its rules never apply. Add it to the Include of the sites that should use it, or remove it."));
+		});
+	}
+
+	[Test]
+	public void Rule_set_entries_are_analyzed_once_however_many_sites_include_the_set()
+	{
+		_site.Options.RuleSets["simplePages"] = new RuleSetOptions { ContentTypes = { ["landingPage"] = Block(["missingProperty"]) } };
+		foreach (SiteVisibilityOptions site in _site.Options.Sites.Values)
+		{
+			site.Include = ["simplePages"];
+		}
+
+		ConfigurationAnalysis analysis = Analyze();
+
+		ConfigurationAnalysisIssue issue = Single(analysis, IssueCodes.UnknownPropertyAlias);
+		Assert.Multiple(() =>
+		{
+			Assert.That(issue.SiteLabel, Is.Null);
+			Assert.That(issue.ContentTypeAlias, Is.EqualTo("landingPage"));
+			Assert.That(issue.Path, Is.EqualTo("RuleSets:simplePages:ContentTypes:landingPage:Properties"));
+			Assert.That(issue.Message, Does.StartWith("Property 'missingProperty' in rule set 'simplePages' does not exist on content type 'landingPage'"));
+		});
+	}
+
+	[Test]
+	public void A_rule_set_entry_keyed_by_a_composition_is_PV205_naming_the_rule_set()
+	{
+		_site.Options.RuleSets["legacy"] = new RuleSetOptions { ContentTypes = { ["siteSettings"] = Block(["legacyNotes"]) } };
+		_site.Options.Sites["campaign"].Include = ["legacy"];
+
+		ConfigurationAnalysis analysis = Analyze();
+
+		ConfigurationAnalysisIssue issue = analysis.Issues.Single(i => i.Code == IssueCodes.CompositionRuleReach && i.Path == "RuleSets:legacy:ContentTypes:siteSettings");
+		Assert.Multiple(() =>
+		{
+			Assert.That(issue.SiteLabel, Is.Null);
+			Assert.That(issue.Message, Does.StartWith("Content type 'siteSettings' is a composition, so the rules of rule set 'legacy' for it also apply to the 1 content type composed of it: landingPage."));
+		});
+	}
+
+	[Test]
+	public void An_entry_that_hides_nothing_is_PV206_and_is_not_checked_further()
+	{
+		_site.Options.ContentTypes["article"] = Block();
+		_site.Options.RuleSets["simplePages"] = new RuleSetOptions { ContentTypes = { ["promoBanner"] = null! } };
+		_site.Options.Sites["campaign"].Include = ["simplePages"];
+		_site.Options.Sites["corporate"].ContentTypes["siteSettings"] = new ContentTypeVisibilityOptions();
+
+		ConfigurationAnalysis analysis = Analyze();
+
+		List<ConfigurationAnalysisIssue> issues = analysis.Issues.Where(issue => issue.Code == IssueCodes.EmptyContentTypeRule).ToList();
+		Assert.Multiple(() =>
+		{
+			Assert.That(
+				issues.Select(issue => issue.Path),
+				Is.EqualTo(new[] { "ContentTypes:article", "RuleSets:simplePages:ContentTypes:promoBanner", "Sites:corporate:ContentTypes:siteSettings" }));
+			Assert.That(issues.Select(issue => issue.Severity), Is.All.EqualTo(IssueSeverity.Info));
+			Assert.That(issues.Select(issue => issue.SiteLabel), Is.EqualTo(new[] { null, null, "corporate" }));
+			Assert.That(issues.Select(issue => issue.ContentTypeAlias), Is.EqualTo(new[] { "article", "promoBanner", "siteSettings" }));
+			Assert.That(issues[0].Message, Is.EqualTo("Content type 'article' in the global rules lists no properties and no containers, so it hides nothing. Add aliases, or remove the entry."));
+			Assert.That(issues[1].Message, Does.StartWith("Content type 'promoBanner' in rule set 'simplePages' lists no properties"));
+			Assert.That(
+				analysis.Issues.Where(issue => issue.Path == "Sites:corporate:ContentTypes:siteSettings").Select(issue => issue.Code),
+				Is.EqualTo(new[] { IssueCodes.EmptyContentTypeRule }),
+				"no other check, although siteSettings is a composition (PV205)");
+			Assert.That(analysis.IsHealthy, Is.True, "informational only");
+		});
+	}
+
+	[Test]
+	public void Rule_set_entries_are_checked_when_they_are_the_only_entries()
+	{
+		_site.Options.ContentTypes.Clear();
+		foreach (SiteVisibilityOptions site in _site.Options.Sites.Values)
+		{
+			site.ContentTypes.Clear();
+		}
+
+		_site.Options.RuleSets["simplePages"] = new RuleSetOptions { ContentTypes = { ["landingPage"] = Block(["bannerImge"]) } };
+		_site.Options.Sites["campaign"].Include = ["simplePages"];
+
+		ConfigurationAnalysis analysis = Analyze();
+
+		ConfigurationAnalysisIssue issue = Single(analysis, IssueCodes.UnknownPropertyAlias);
+		Assert.Multiple(() =>
+		{
+			Assert.That(issue.Path, Is.EqualTo("RuleSets:simplePages:ContentTypes:landingPage:Properties"));
+			Assert.That(issue.Suggestion, Is.EqualTo("bannerImage"));
+		});
+	}
+
+	[Test]
+	public void An_empty_entry_for_a_content_type_that_does_not_exist_is_PV104_not_PV206()
+	{
+		_site.Options.ContentTypes["artcle"] = null!;
+		_site.Options.Sites["corporate"].ContentTypes["landingPge"] = new ContentTypeVisibilityOptions();
+
+		ConfigurationAnalysis analysis = Analyze();
+
+		List<ConfigurationAnalysisIssue> issues = analysis.Issues.Where(issue => issue.Code == IssueCodes.UnknownContentTypeAlias).ToList();
+		Assert.Multiple(() =>
+		{
+			Assert.That(issues.Select(issue => issue.Path), Is.EqualTo(new[] { "ContentTypes:artcle", "Sites:corporate:ContentTypes:landingPge" }));
+			Assert.That(issues.Select(issue => issue.Suggestion), Is.EqualTo(new[] { "article", "landingPage" }));
+			Assert.That(analysis.Issues.Select(issue => issue.Code), Has.None.EqualTo(IssueCodes.EmptyContentTypeRule));
+		});
+	}
+
+	[Test]
+	public void A_site_without_content_type_entries_is_not_PV206()
+	{
+		_site.Options.Sites["everythingElse"].ContentTypes.Clear();
+
+		ConfigurationAnalysis analysis = Analyze();
+
+		Assert.That(analysis.Issues.Select(issue => issue.Code), Has.None.EqualTo(IssueCodes.EmptyContentTypeRule));
 	}
 
 	[Test]

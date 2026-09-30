@@ -49,7 +49,8 @@ public sealed record UnmatchedCompositionAliases(
 	IReadOnlyList<string> ContainerAliases);
 
 /// <summary>
-///     Returns the rule blocks keyed by one content type alias (the global block and the matched site's block).
+///     Returns the rule blocks keyed by one content type alias (the global block, the blocks of the rule sets the matched
+///     site includes, and the site's own block).
 /// </summary>
 /// <param name="contentTypeAlias">A content type alias, matched case-insensitively.</param>
 /// <returns>The blocks, in any order; empty when no rule is keyed by the alias.</returns>
@@ -78,7 +79,7 @@ public interface IHiddenFieldsResolver
 	///     configured key against its own type this way.
 	/// </summary>
 	/// <param name="contentType">The document or element type the blocks are keyed by.</param>
-	/// <param name="ruleBlocks">The rule blocks (global and site), in any order.</param>
+	/// <param name="ruleBlocks">The rule blocks (global, rule set and site), in any order.</param>
 	/// <param name="hideEmptiedContainers">Whether to also hide containers whose every property ends up hidden.</param>
 	/// <returns>The keys to hide; never <c>null</c>.</returns>
 	HiddenFields Resolve(IContentType contentType, IReadOnlyList<ContentTypeVisibilityOptions> ruleBlocks, bool hideEmptiedContainers);

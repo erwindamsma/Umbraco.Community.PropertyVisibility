@@ -6,6 +6,17 @@ The release workflow publishes the section whose heading matches the tag (`## [1
 
 ## [Unreleased]
 
+### Added
+
+- Rule sets: rules that several sites share are written once under `RuleSets`, and each site names the sets it uses in `Include`. A site's rules are its own united with those of its rule sets, so a rule set can only add to what a site hides. A name in `Include` that matches no rule set is a configuration error (`PV009`: nothing is hidden until it is fixed), and so is a rule set name that contains `:` (`PV010`), as for a site label; a rule set that no site includes is a warning (`PV106`).
+- `PV206` (informational): a content type entry without properties and containers, which hides nothing.
+- The debug log's hidden-fields and applied lines carry their summary in the text of the line (site and match reason, counts, warning codes), so a copied console line keeps it.
+- The README section "Moving from your own implementation", for sites that hid fields per site with code of their own, such as a `SendingContentNotification` handler before Umbraco 14.
+
+### Changed
+
+- `PV103` suggests a site with only a `RootNodeKey` for a root node that is not a site, and says that an `IsDefault` site also takes roots added later. The configuration reference describes this under "Roots that are not sites".
+
 ## [1.0.0-rc.2] - 2026-09-30
 
 ### Changed

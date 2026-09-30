@@ -26,6 +26,12 @@ public sealed class SiteVisibilityOptions
 	public bool IsDefault { get; set; }
 
 	/// <summary>
+	///     Names of the rule sets (<see cref="PropertyVisibilityOptions.RuleSets" />) this site uses, matched
+	///     case-insensitively. Their rules are united with the site's own.
+	/// </summary>
+	public List<string> Include { get; set; } = [];
+
+	/// <summary>
 	///     Rules for this site, keyed by content type alias (document or element type). A rule keyed by a composition
 	///     also applies to every type composed of it, where it hides only what the composition contributes.
 	/// </summary>

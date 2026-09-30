@@ -189,6 +189,142 @@ public sealed class PropertyVisibilityOptionsValidatorTests
 	}
 
 	[Test]
+	public void Included_rule_sets_that_exist_are_valid_whatever_the_case_of_the_name()
+	{
+		PropertyVisibilityOptions options = SampleOptions();
+		options.RuleSets["simplePages"] = new RuleSetOptions
+		{
+			ContentTypes = { ["landingPage"] = new ContentTypeVisibilityOptions { Containers = ["seoTab", "settingsTab/advanced"] } },
+		};
+		options.Sites["corporate"].Include = ["simplePages"];
+		options.Sites["campaign"].Include = ["SIMPLEPAGES", "simplePages"];
+
+		Assert.Multiple(() =>
+		{
+			Assert.That(_validator.Collect(options), Is.Empty);
+			Assert.That(_validator.Validate(Options.DefaultName, options).Succeeded, Is.True);
+		});
+	}
+
+	[Test]
+	public void An_included_rule_set_that_does_not_exist_is_PV009_suggesting_the_closest_name()
+	{
+		PropertyVisibilityOptions options = SampleOptions();
+		options.RuleSets["simplePages"] = new RuleSetOptions();
+		options.Sites["corporate"].Include = ["simplePages"];
+		options.Sites["campaign"].Include = ["simplePage"];
+
+		ConfigurationIssue issue = SingleError(options);
+
+		Assert.Multiple(() =>
+		{
+			Assert.That(issue.Code, Is.EqualTo(IssueCodes.UnknownRuleSet));
+			Assert.That(issue.Code, Is.EqualTo("PV009"));
+			Assert.That(issue.Path, Is.EqualTo("Sites:campaign:Include"));
+			Assert.That(issue.Message, Is.EqualTo("Site 'campaign' includes the rule set 'simplePage', which does not exist under RuleSets."));
+			Assert.That(issue.Suggestion, Is.EqualTo("simplePages"));
+		});
+	}
+
+	[TestCase("seo ", ExpectedResult = "seo")]
+	[TestCase("faq", ExpectedResult = null)]
+	[TestCase("blog", ExpectedResult = null)]
+	[TestCase("", ExpectedResult = null)]
+	public string? PV009_suggests_only_a_close_rule_set_name(string included)
+	{
+		PropertyVisibilityOptions options = SampleOptions();
+		options.RuleSets["seo"] = new RuleSetOptions();
+		options.RuleSets["simplePages"] = new RuleSetOptions();
+		options.Sites["corporate"].Include = ["seo", "simplePages", included];
+
+		ConfigurationIssue issue = SingleError(options);
+
+		Assert.That(issue.Code, Is.EqualTo(IssueCodes.UnknownRuleSet));
+		return issue.Suggestion;
+	}
+
+	[TestCase(null)]
+	[TestCase("")]
+	[TestCase(" ")]
+	public void An_empty_include_is_PV009_without_a_name_in_the_message(string? included)
+	{
+		PropertyVisibilityOptions options = SampleOptions();
+		options.RuleSets["seo"] = new RuleSetOptions();
+		options.Sites["corporate"].Include = ["seo", included!];
+
+		ConfigurationIssue issue = SingleError(options);
+
+		Assert.Multiple(() =>
+		{
+			Assert.That(issue.Code, Is.EqualTo(IssueCodes.UnknownRuleSet));
+			Assert.That(issue.Message, Is.EqualTo("Site 'corporate' has an empty rule set name in Include."));
+			Assert.That(issue.Suggestion, Is.Null);
+		});
+	}
+
+	[Test]
+	public void Rule_set_name_with_a_colon_is_PV010()
+	{
+		var options = new PropertyVisibilityOptions();
+		options.RuleSets["shared:seo"] = new RuleSetOptions();
+
+		ConfigurationIssue issue = SingleError(options);
+
+		Assert.Multiple(() =>
+		{
+			Assert.That(issue.Code, Is.EqualTo(IssueCodes.InvalidRuleSetName));
+			Assert.That(issue.Code, Is.EqualTo("PV010"));
+			Assert.That(issue.Path, Is.EqualTo("RuleSets:shared:seo"));
+			Assert.That(issue.Message, Is.EqualTo("Rule set name 'shared:seo' contains a colon; colons are reserved as configuration path separators."));
+		});
+	}
+
+	[Test]
+	public void Each_include_without_a_rule_set_is_its_own_PV009()
+	{
+		PropertyVisibilityOptions options = SampleOptions();
+		options.Sites["corporate"].Include = ["first", "second"];
+
+		IReadOnlyList<ConfigurationIssue> issues = _validator.Collect(options);
+
+		Assert.Multiple(() =>
+		{
+			Assert.That(issues.Select(issue => issue.Code), Is.EqualTo(new[] { IssueCodes.UnknownRuleSet, IssueCodes.UnknownRuleSet }));
+			Assert.That(issues.Select(issue => issue.Suggestion), Is.All.Null, "no rule set to suggest");
+		});
+	}
+
+	[Test]
+	public void Invalid_rule_set_container_alias_is_PV006_with_the_rule_set_path()
+	{
+		PropertyVisibilityOptions options = SampleOptions();
+		options.RuleSets["simplePages"] = new RuleSetOptions
+		{
+			ContentTypes = { ["landingPage"] = new ContentTypeVisibilityOptions { Containers = ["seoTab/"] } },
+		};
+		options.Sites["corporate"].Include = ["simplePages"];
+
+		ConfigurationIssue issue = SingleError(options);
+
+		Assert.Multiple(() =>
+		{
+			Assert.That(issue.Code, Is.EqualTo(IssueCodes.InvalidContainerAlias));
+			Assert.That(issue.Path, Is.EqualTo("RuleSets:simplePages:ContentTypes:landingPage:Containers"));
+		});
+	}
+
+	[Test]
+	public void Null_entries_are_not_structural_errors()
+	{
+		PropertyVisibilityOptions options = SampleOptions();
+		options.ContentTypes["article"] = null!;
+		options.RuleSets["empty"] = null!;
+		options.Sites["corporate"].Include = ["empty"];
+
+		Assert.That(_validator.Collect(options), Is.Empty);
+	}
+
+	[Test]
 	public void Every_structural_error_is_collected_and_fails_validation()
 	{
 		var options = new PropertyVisibilityOptions();
@@ -197,6 +333,7 @@ public sealed class PropertyVisibilityOptionsValidatorTests
 		options.Sites["second"] = new SiteVisibilityOptions { RootNodeKey = CorporateRoot, IsDefault = true };
 		options.Sites["third"] = new SiteVisibilityOptions();
 		options.Sites["with:colon"] = new SiteVisibilityOptions { RootNodeName = "Campaign site" };
+		options.Sites["fourth"] = new SiteVisibilityOptions { RootNodeName = "Other site", Include = ["missing"] };
 
 		IReadOnlyList<ConfigurationIssue> issues = _validator.Collect(options);
 		ValidateOptionsResult result = _validator.Validate(Options.DefaultName, options);
@@ -211,6 +348,7 @@ public sealed class PropertyVisibilityOptionsValidatorTests
 					IssueCodes.DuplicateSiteIdentity,
 					IssueCodes.SiteWithoutIdentity,
 					IssueCodes.InvalidSiteLabel,
+					IssueCodes.UnknownRuleSet,
 					IssueCodes.MultipleDefaultSites,
 				}));
 			Assert.That(issues.Select(issue => issue.Severity), Has.All.EqualTo(IssueSeverity.Error));

@@ -13,7 +13,8 @@ namespace Umbraco.Community.PropertyVisibility.Services;
 /// </summary>
 /// <remarks>
 ///     Flow: options -> <see cref="PropertyVisibilityOptions.Enabled" /> -> content type (unknown: empty) -> root ->
-///     site -> rule blocks (global plus site, keyed by the content type and by each type it is composed of) -> resolve.
+///     site -> rule blocks (global, the rule sets the site includes, and the site's own, keyed by the content type and by
+///     each type it is composed of) -> resolve.
 ///     The compositions come from the content type object itself, so a request looks up one content type, as before.
 ///     An unknown alias in a rule keyed by a composition is reported against that composition. Reading the options can
 ///     fail in two ways, both of which fail open with a <c>PV008</c> warning: validation (<see cref="OptionsValidationException" />) and binding (an
@@ -177,14 +178,24 @@ public sealed class PropertyVisibilityService : IPropertyVisibilityService, IDis
 
 		RootNodeResolution resolution = _rootNodeResolver.Resolve(documentKey, parentKey);
 		SiteMatch match = _siteMatcher.Match(options, resolution);
+		IReadOnlyList<RuleSetOptions> ruleSets = IncludedRuleSets.Of(options, match.Site);
 
-		// The global and site blocks keyed by the content type, and by each type it is composed of (asked by the resolver).
+		// The global, rule set and site blocks keyed by the content type, and by each type it is composed of (asked by the
+		// resolver).
 		IReadOnlyList<ContentTypeVisibilityOptions> RuleBlocksFor(string alias)
 		{
-			var blocks = new List<ContentTypeVisibilityOptions>(2);
+			var blocks = new List<ContentTypeVisibilityOptions>(2 + ruleSets.Count);
 			if (options.ContentTypes.TryGetValueIgnoreCase(alias, out ContentTypeVisibilityOptions? globalBlock))
 			{
 				blocks.Add(globalBlock);
+			}
+
+			foreach (RuleSetOptions ruleSet in ruleSets)
+			{
+				if (ruleSet.ContentTypes.TryGetValueIgnoreCase(alias, out ContentTypeVisibilityOptions? ruleSetBlock))
+				{
+					blocks.Add(ruleSetBlock);
+				}
 			}
 
 			if (match.Site is not null && match.Site.ContentTypes.TryGetValueIgnoreCase(alias, out ContentTypeVisibilityOptions? siteBlock))
@@ -216,7 +227,7 @@ public sealed class PropertyVisibilityService : IPropertyVisibilityService, IDis
 			if (resolution.RootKey is { } rootKey && _unmatchedRootsLogged.TryAdd(rootKey, 0))
 			{
 				_logger.LogDebug(
-					"PropertyVisibility: no site matches root {RootKey} and no site is the default; only global rules apply. Add a RootNodeKey, a RootNodeName or an IsDefault site.",
+					"PropertyVisibility: no site matches root {RootKey} and no site is the default; only global rules apply. Add a site with this RootNodeKey, without rules when the root is not a site.",
 					rootKey);
 			}
 		}

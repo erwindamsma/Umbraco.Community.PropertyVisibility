@@ -9,10 +9,13 @@ namespace Umbraco.Community.PropertyVisibility.Configuration.ConfigFile;
 ///     same rules.
 /// </summary>
 /// <remarks>
-///     Covers <see cref="PropertyVisibilityOptions.HideEmptiedContainers" />, <see cref="PropertyVisibilityOptions.ContentTypes" />
-///     and <see cref="PropertyVisibilityOptions.Sites" />, written as canonical JSON: dictionary keys and alias lists sorted
+///     Covers <see cref="PropertyVisibilityOptions.HideEmptiedContainers" />, <see cref="PropertyVisibilityOptions.ContentTypes" />,
+///     <see cref="PropertyVisibilityOptions.RuleSets" /> and <see cref="PropertyVisibilityOptions.Sites" />, written as
+///     canonical JSON: dictionary keys and alias lists (a site's <see cref="SiteVisibilityOptions.Include" /> too) sorted
 ///     ordinally, no whitespace. Formatting, comments and ordering of the source therefore do not change the hash; any
-///     change of a key, alias, root key, root name or flag does. <see cref="PropertyVisibilityOptions.Enabled" /> and
+///     change of a key, alias, rule set name, root key, root name or flag does. Rule sets and a site's
+///     <see cref="SiteVisibilityOptions.Include" /> are only written when they are not empty, so rules that use neither
+///     hash as they did before rule sets existed. <see cref="PropertyVisibilityOptions.Enabled" /> and
 ///     <see cref="PropertyVisibilityOptions.ConfigFile" /> are not rules and are left out.
 /// </remarks>
 internal static class RulesHash
@@ -33,6 +36,24 @@ internal static class RulesHash
 			writer.WriteBoolean(nameof(PropertyVisibilityOptions.HideEmptiedContainers), options.HideEmptiedContainers);
 			writer.WritePropertyName(nameof(PropertyVisibilityOptions.ContentTypes));
 			WriteContentTypes(writer, options.ContentTypes);
+
+			// Written only when present, so rules without rule sets keep the hash they had before rule sets existed.
+			if (options.RuleSets is { Count: > 0 })
+			{
+				writer.WritePropertyName(nameof(PropertyVisibilityOptions.RuleSets));
+				writer.WriteStartObject();
+				foreach ((var name, RuleSetOptions? ruleSet) in Sorted(options.RuleSets))
+				{
+					writer.WritePropertyName(name);
+					writer.WriteStartObject();
+					writer.WritePropertyName(nameof(RuleSetOptions.ContentTypes));
+					WriteContentTypes(writer, ruleSet?.ContentTypes);
+					writer.WriteEndObject();
+				}
+
+				writer.WriteEndObject();
+			}
+
 			writer.WritePropertyName(nameof(PropertyVisibilityOptions.Sites));
 			writer.WriteStartObject();
 			foreach ((var label, SiteVisibilityOptions? site) in Sorted(options.Sites))
@@ -50,6 +71,11 @@ internal static class RulesHash
 				}
 
 				writer.WriteBoolean(nameof(SiteVisibilityOptions.IsDefault), site?.IsDefault ?? false);
+				if (site?.Include is { Count: > 0 } include)
+				{
+					WriteAliases(writer, nameof(SiteVisibilityOptions.Include), include);
+				}
+
 				writer.WritePropertyName(nameof(SiteVisibilityOptions.ContentTypes));
 				WriteContentTypes(writer, site?.ContentTypes);
 				writer.WriteEndObject();

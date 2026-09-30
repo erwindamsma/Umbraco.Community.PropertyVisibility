@@ -26,7 +26,8 @@ public sealed class PropertyVisibilityOptions
 
 	/// <summary>
 	///     Optional rules file relative to the content root. An empty value disables the file source.
-	///     When the file exists and parses it replaces <see cref="ContentTypes" /> and <see cref="Sites" /> wholesale.
+	///     When the file exists and parses it replaces <see cref="ContentTypes" />, <see cref="RuleSets" /> and
+	///     <see cref="Sites" /> wholesale.
 	/// </summary>
 	/// <remarks>
 	///     A missing file, or one holding no JSON value (empty or only comments), is not an error: the appsettings rules
@@ -46,6 +47,12 @@ public sealed class PropertyVisibilityOptions
 	///     composition also applies to every type composed of it, where it hides only what the composition contributes.
 	/// </summary>
 	public Dictionary<string, ContentTypeVisibilityOptions> ContentTypes { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+
+	/// <summary>
+	///     Rules that several sites share, keyed by a free name. A site uses a set by naming it in
+	///     <see cref="SiteVisibilityOptions.Include" />.
+	/// </summary>
+	public Dictionary<string, RuleSetOptions> RuleSets { get; set; } = new(StringComparer.OrdinalIgnoreCase);
 
 	/// <summary>
 	///     Per-site rules keyed by a free label used in diagnostics.

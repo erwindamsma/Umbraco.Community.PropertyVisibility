@@ -1,12 +1,14 @@
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Options;
+using Umbraco.Community.PropertyVisibility.Services;
 
 namespace Umbraco.Community.PropertyVisibility.Configuration;
 
 /// <summary>
 ///     Validates the structural rules of <see cref="PropertyVisibilityOptions" />: every site has an identity,
 ///     identities are unique, at most one default, container aliases have a non-empty tab or group alias before any
-///     <c>/</c> and a non-empty rest after it, labels carry no colon.
+///     <c>/</c> and a non-empty rest after it, site labels and rule set names carry no colon, and every rule set a site
+///     includes exists.
 /// </summary>
 /// <remarks>
 ///     Everything that depends on the environment (unknown content types, unknown aliases, missing roots) is a
@@ -29,6 +31,20 @@ public sealed partial class PropertyVisibilityOptionsValidator : IValidateOption
 		var issues = new List<ConfigurationIssue>();
 
 		CollectContainerAliasIssues(options.ContentTypes, "ContentTypes", issues);
+
+		foreach ((var name, RuleSetOptions? ruleSet) in options.RuleSets)
+		{
+			if (name.Contains(':'))
+			{
+				issues.Add(new ConfigurationIssue(
+					IssueCodes.InvalidRuleSetName,
+					IssueSeverity.Error,
+					$"Rule set name '{name}' contains a colon; colons are reserved as configuration path separators.",
+					$"RuleSets:{name}"));
+			}
+
+			CollectContainerAliasIssues(ruleSet?.ContentTypes, $"RuleSets:{name}:ContentTypes", issues);
+		}
 
 		var seenKeys = new Dictionary<Guid, string>();
 		var seenNames = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
@@ -97,6 +113,21 @@ public sealed partial class PropertyVisibilityOptionsValidator : IValidateOption
 				defaults.Add(label);
 			}
 
+			foreach (var included in site.Include ?? [])
+			{
+				if (included is null || !options.RuleSets.TryGetValueIgnoreCase(included, out _))
+				{
+					issues.Add(new ConfigurationIssue(
+						IssueCodes.UnknownRuleSet,
+						IssueSeverity.Error,
+						string.IsNullOrWhiteSpace(included)
+							? $"Site '{label}' has an empty rule set name in Include."
+							: $"Site '{label}' includes the rule set '{included}', which does not exist under RuleSets.",
+						$"{path}:Include",
+						included is null ? null : ConfigurationAnalyzer.Suggest(included, options.RuleSets.Keys)));
+				}
+			}
+
 			CollectContainerAliasIssues(site.ContentTypes, $"{path}:ContentTypes", issues);
 		}
 
@@ -143,13 +174,13 @@ public sealed partial class PropertyVisibilityOptionsValidator : IValidateOption
 		=> !string.IsNullOrWhiteSpace(alias) && ContainerAliasPattern().IsMatch(alias);
 
 	private static void CollectContainerAliasIssues(
-		Dictionary<string, ContentTypeVisibilityOptions> contentTypes,
+		Dictionary<string, ContentTypeVisibilityOptions>? contentTypes,
 		string path,
 		List<ConfigurationIssue> issues)
 	{
-		foreach ((var alias, ContentTypeVisibilityOptions block) in contentTypes)
+		foreach ((var alias, ContentTypeVisibilityOptions? block) in contentTypes ?? [])
 		{
-			foreach (var container in block.Containers)
+			foreach (var container in block?.Containers ?? [])
 			{
 				if (!IsValidContainerAlias(container))
 				{

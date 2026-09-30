@@ -11,20 +11,27 @@ namespace Umbraco.Community.PropertyVisibility.Configuration.ConfigFile;
 internal sealed class ConfigFileRules
 {
 	private readonly Dictionary<string, ContentTypeVisibilityOptions> _contentTypes;
+	private readonly Dictionary<string, RuleSetOptions> _ruleSets;
 	private readonly Dictionary<string, SiteVisibilityOptions> _sites;
 
 	private ConfigFileRules(
 		bool? hideEmptiedContainers,
 		Dictionary<string, ContentTypeVisibilityOptions> contentTypes,
+		Dictionary<string, RuleSetOptions> ruleSets,
 		Dictionary<string, SiteVisibilityOptions> sites)
 	{
 		HideEmptiedContainers = hideEmptiedContainers;
 		_contentTypes = contentTypes;
+		_ruleSets = ruleSets;
 		_sites = sites;
 	}
 
 	/// <summary>No rules: what a rules file that never parsed contributes.</summary>
-	public static ConfigFileRules Empty { get; } = new(null, new(StringComparer.OrdinalIgnoreCase), new(StringComparer.OrdinalIgnoreCase));
+	public static ConfigFileRules Empty { get; } = new(
+		null,
+		new(StringComparer.OrdinalIgnoreCase),
+		new(StringComparer.OrdinalIgnoreCase),
+		new(StringComparer.OrdinalIgnoreCase));
 
 	/// <summary>The file's <c>HideEmptiedContainers</c>, or <c>null</c> when the file does not set it.</summary>
 	public bool? HideEmptiedContainers { get; }
@@ -35,17 +42,19 @@ internal sealed class ConfigFileRules
 	/// <param name="file">The deserialized file.</param>
 	/// <returns>The rules.</returns>
 	public static ConfigFileRules From(PropertyVisibilityConfigFile file)
-		=> new(file.HideEmptiedContainers, CopyContentTypes(file.ContentTypes), CopySites(file.Sites));
+		=> new(file.HideEmptiedContainers, CopyContentTypes(file.ContentTypes), CopyRuleSets(file.RuleSets), CopySites(file.Sites));
 
 	/// <summary>
-	///     Replaces <see cref="PropertyVisibilityOptions.ContentTypes" /> and <see cref="PropertyVisibilityOptions.Sites" />
-	///     with copies of these rules, and <see cref="PropertyVisibilityOptions.HideEmptiedContainers" /> when the file set it.
+	///     Replaces <see cref="PropertyVisibilityOptions.ContentTypes" />, <see cref="PropertyVisibilityOptions.RuleSets" />
+	///     and <see cref="PropertyVisibilityOptions.Sites" /> with copies of these rules, and
+	///     <see cref="PropertyVisibilityOptions.HideEmptiedContainers" /> when the file set it.
 	///     <see cref="PropertyVisibilityOptions.Enabled" /> and <see cref="PropertyVisibilityOptions.ConfigFile" /> are not touched.
 	/// </summary>
 	/// <param name="options">The options bound from appsettings.</param>
 	public void ApplyTo(PropertyVisibilityOptions options)
 	{
 		options.ContentTypes = CopyContentTypes(_contentTypes);
+		options.RuleSets = CopyRuleSets(_ruleSets);
 		options.Sites = CopySites(_sites);
 		if (HideEmptiedContainers is { } hideEmptiedContainers)
 		{
@@ -68,6 +77,17 @@ internal sealed class ConfigFileRules
 		return copy;
 	}
 
+	private static Dictionary<string, RuleSetOptions> CopyRuleSets(Dictionary<string, RuleSetOptions>? source)
+	{
+		var copy = new Dictionary<string, RuleSetOptions>(StringComparer.OrdinalIgnoreCase);
+		foreach ((var name, RuleSetOptions? ruleSet) in source ?? [])
+		{
+			copy[name] = new RuleSetOptions { ContentTypes = CopyContentTypes(ruleSet?.ContentTypes) };
+		}
+
+		return copy;
+	}
+
 	private static Dictionary<string, SiteVisibilityOptions> CopySites(Dictionary<string, SiteVisibilityOptions>? source)
 	{
 		var copy = new Dictionary<string, SiteVisibilityOptions>(StringComparer.OrdinalIgnoreCase);
@@ -78,6 +98,7 @@ internal sealed class ConfigFileRules
 				RootNodeKey = site?.RootNodeKey,
 				RootNodeName = site?.RootNodeName,
 				IsDefault = site?.IsDefault ?? false,
+				Include = CopyAliases(site?.Include),
 				ContentTypes = CopyContentTypes(site?.ContentTypes),
 			};
 		}

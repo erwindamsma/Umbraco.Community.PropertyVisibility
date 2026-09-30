@@ -18,7 +18,7 @@ public sealed class DocumentationSampleTests
 	private const string ConfigFileSchemaFile = "src/Umbraco.Community.PropertyVisibility/PropertyVisibility.config-schema.json";
 	private const string PackageProject = "src/Umbraco.Community.PropertyVisibility/Umbraco.Community.PropertyVisibility.csproj";
 
-	private static readonly string[] RulesFileKeys = ["$schema", "HideEmptiedContainers", "ContentTypes", "Sites"];
+	private static readonly string[] RulesFileKeys = ["$schema", "HideEmptiedContainers", "ContentTypes", "RuleSets", "Sites"];
 
 	private static readonly JsonDocumentOptions JsonWithComments = new()
 	{

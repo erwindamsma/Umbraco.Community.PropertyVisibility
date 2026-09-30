@@ -82,14 +82,27 @@ public sealed class JsonSchemaTests
 	}
 
 	[Test]
-	public void AppSettingsSchema_rejects_a_misspelled_key_inside_a_site_rule()
+	public void AppSettingsSchema_rejects_a_misspelled_key_inside_a_rule_set_rule()
 	{
 		var appSettings = ReplaceFirst(TestSiteAppSettings, "\"Properties\"", "\"Propertes\"");
 
 		var result = Evaluate(AppSettingsSchemaFile, appSettings);
 
 		Assert.That(result.IsValid, Is.False);
-		Assert.That(InvalidLocations(result), Has.Some.EndsWith("/Propertes"));
+		Assert.That(InvalidLocations(result), Has.Some.EqualTo("/PropertyVisibility/RuleSets/noBannerImage/ContentTypes/landingPage/Propertes"));
+	}
+
+	[Test]
+	public void AppSettingsSchema_rejects_a_misspelled_key_inside_a_site_rule()
+	{
+		var sites = TestSiteAppSettings.IndexOf("\"Sites\"", StringComparison.Ordinal);
+		Assert.That(sites, Is.GreaterThanOrEqualTo(0), "'\"Sites\"' not found in the sample");
+		var appSettings = TestSiteAppSettings[..sites] + ReplaceFirst(TestSiteAppSettings[sites..], "\"Properties\"", "\"Propertes\"");
+
+		var result = Evaluate(AppSettingsSchemaFile, appSettings);
+
+		Assert.That(result.IsValid, Is.False);
+		Assert.That(InvalidLocations(result), Has.Some.EqualTo("/PropertyVisibility/Sites/corporate/ContentTypes/landingPage/Propertes"));
 	}
 
 	[Test]
@@ -140,6 +153,27 @@ public sealed class JsonSchemaTests
 
 		Assert.That(result.IsValid, Is.False);
 		Assert.That(InvalidLocations(result), Has.Some.EqualTo("/Sites/corporate/ContentTypes/landingPage/Propertes"));
+	}
+
+	[Test]
+	public void ConfigFileSchema_accepts_rule_sets_and_rejects_a_misspelled_key_in_one()
+	{
+		const string rules = """
+			{
+				"RuleSets": { "simplePages": { "ContentTypes": { "landingPage": { "Containers": ["seoTab"] } } } },
+				"Sites": { "corporate": { "RootNodeKey": "5c2b4d7e-9f1a-4c3e-8b6d-2a1f0e9d8c7b", "Include": ["simplePages"] } }
+			}
+			""";
+
+		SchemaResult valid = Evaluate(ConfigFileSchemaFile, rules);
+		SchemaResult misspelled = Evaluate(ConfigFileSchemaFile, ReplaceFirst(rules, "\"ContentTypes\"", "\"ContentType\""));
+
+		Assert.Multiple(() =>
+		{
+			Assert.That(valid.IsValid, Is.True, Describe(valid));
+			Assert.That(misspelled.IsValid, Is.False);
+			Assert.That(InvalidLocations(misspelled), Has.Some.EqualTo("/RuleSets/simplePages/ContentType"));
+		});
 	}
 
 	[TestCase("Enabled", "false")]

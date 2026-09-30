@@ -26,6 +26,13 @@
         "$ref": "#/definitions/ContentTypeVisibilityOptions"
       }
     },
+    "RuleSets": {
+      "type": "object",
+      "description": "Rules that several sites share, keyed by a free name; a site uses a set by naming it in its Include. Replaces PropertyVisibility:RuleSets from appsettings.",
+      "additionalProperties": {
+        "$ref": "#/definitions/RuleSetOptions"
+      }
+    },
     "Sites": {
       "type": "object",
       "description": "Per-site rules keyed by a free label used in diagnostics. Replaces PropertyVisibility:Sites from appsettings.",
@@ -56,6 +63,20 @@
         }
       }
     },
+    "RuleSetOptions": {
+      "type": "object",
+      "description": "Rules that several sites share: a site uses them by naming the set in Include.",
+      "additionalProperties": false,
+      "properties": {
+        "ContentTypes": {
+          "type": "object",
+          "description": "Rules of this set, keyed by content type alias (document or element type). A rule keyed by a composition also applies to every type composed of it, where it hides only what the composition contributes.",
+          "additionalProperties": {
+            "$ref": "#/definitions/ContentTypeVisibilityOptions"
+          }
+        }
+      }
+    },
     "SiteVisibilityOptions": {
       "type": "object",
       "description": "Rules for one site, identified by its root node.",
@@ -80,6 +101,13 @@
           "type": "boolean",
           "description": "Marks the site whose rules apply to every root node no other site matched. At most one site may be the default.",
           "default": false
+        },
+        "Include": {
+          "type": "array",
+          "description": "Names of the rule sets (RuleSets) this site uses, matched case-insensitively. Their rules are united with the site's own.",
+          "items": {
+            "type": "string"
+          }
         },
         "ContentTypes": {
           "type": "object",

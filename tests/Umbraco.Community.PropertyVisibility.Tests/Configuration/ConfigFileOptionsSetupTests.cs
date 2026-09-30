@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using System.Text;
 using Microsoft.Extensions.Logging;
 using Umbraco.Community.PropertyVisibility.Configuration;
@@ -248,6 +249,16 @@ public sealed class ConfigFileOptionsSetupTests
 		"$.Sites['my site'].ContentType",
 		"ContentTypes",
 		TestName = "A label with a space is written in bracket notation")]
+	[TestCase(
+		"""{ "RuleSets": { "simplePages": { "ContentType": {} } } }""",
+		"$.RuleSets.simplePages.ContentType",
+		"ContentTypes",
+		TestName = "ContentType in a rule set suggests ContentTypes")]
+	[TestCase(
+		"""{ "Sites": { "corporate": { "IsDefault": true, "Includes": ["simplePages"] } } }""",
+		"$.Sites.corporate.Includes",
+		"Include",
+		TestName = "Includes suggests Include")]
 	public void An_unknown_key_is_PV002_with_its_path_and_a_suggestion(string json, string path, string suggestion)
 	{
 		_environment.WriteFile(FileName, json);
@@ -406,6 +417,67 @@ public sealed class ConfigFileOptionsSetupTests
 			Assert.That(issue.Severity, Is.EqualTo(IssueSeverity.Warning));
 			Assert.That(_logger.At(LogLevel.Warning), Has.Count.EqualTo(1), "logged once, not per rebuild");
 			Assert.That(_logger.At(LogLevel.Warning)[0].Message, Does.StartWith(IssueCodes.BothSourcesDefineRules));
+		});
+	}
+
+	[Test]
+	public void File_rule_sets_and_includes_replace_the_appsettings_ones()
+	{
+		_environment.WriteFile(
+			FileName,
+			"""
+			{
+				"RuleSets": { "simplePages": { "ContentTypes": { "landingPage": { "Containers": ["seoTab"] }, "article": null } } },
+				"Sites": { "campaign": { "RootNodeName": "Campaign site", "Include": ["simplePages"] } }
+			}
+			""");
+		PropertyVisibilityOptions appsettings = AppsettingsWithRules();
+		appsettings.RuleSets["fromAppsettings"] = new RuleSetOptions();
+
+		PropertyVisibilityOptions options = Load(appsettings);
+
+		Assert.Multiple(() =>
+		{
+			Assert.That(options.RuleSets.Keys, Is.EquivalentTo(new[] { "simplePages" }), "the appsettings rule set is gone, not merged");
+			Assert.That(options.RuleSets["SIMPLEPAGES"].ContentTypes["LandingPage"].Containers, Is.EqualTo(new[] { "seoTab" }));
+			Assert.That(options.RuleSets["simplePages"].ContentTypes["article"].Properties, Is.Empty, "a null entry becomes an empty one");
+			Assert.That(options.Sites["campaign"].Include, Is.EqualTo(new[] { "simplePages" }));
+			Assert.That(_info.Issues.Single().Code, Is.EqualTo(IssueCodes.BothSourcesDefineRules));
+		});
+	}
+
+	[Test]
+	public void A_null_include_in_the_file_is_dropped()
+	{
+		// As a null alias in Properties and Containers. Appsettings keeps it, and the validator reports it (PV009).
+		_environment.WriteFile(
+			FileName,
+			"""{ "RuleSets": { "simplePages": {} }, "Sites": { "campaign": { "RootNodeName": "Campaign site", "Include": [null, "simplePages"] } } }""");
+
+		PropertyVisibilityOptions options = Load();
+
+		Assert.Multiple(() =>
+		{
+			Assert.That(options.Sites["campaign"].Include, Is.EqualTo(new[] { "simplePages" }));
+			Assert.That(_info.Issues, Is.Empty);
+		});
+	}
+
+	[Test]
+	public void Rule_sets_alone_in_appsettings_next_to_the_file_are_PV301()
+	{
+		_environment.WriteFile(FileName, FileSample);
+		var appsettings = new PropertyVisibilityOptions();
+		appsettings.RuleSets["simplePages"] = new RuleSetOptions();
+
+		PropertyVisibilityOptions options = Load(appsettings);
+
+		Assert.Multiple(() =>
+		{
+			Assert.That(options.RuleSets, Is.Empty, "the file has no rule sets and replaces the appsettings ones");
+			ConfigurationIssue issue = _info.Issues.Single();
+			Assert.That(issue.Code, Is.EqualTo(IssueCodes.BothSourcesDefineRules));
+			Assert.That(issue.Message, Does.Contain("(PropertyVisibility:ContentTypes / RuleSets / Sites)"));
 		});
 	}
 
@@ -777,6 +849,44 @@ public sealed class ConfigFileOptionsSetupTests
 			Assert.That(original, Does.Match("^[0-9a-f]{64}$"));
 			Assert.That(reformatted, Is.EqualTo(original), "whitespace, comments and order are not rule changes");
 			Assert.That(changed, Is.Not.EqualTo(original));
+		});
+	}
+
+	[Test]
+	public void Rules_without_rule_sets_hash_as_they_did_before_rule_sets_existed()
+	{
+		// The canonical JSON the hash was computed from before rule sets existed. Rules without rule sets and without
+		// Include must still produce it, so an upgrade does not change the hash the health check shows.
+		const string canonical = """{"HideEmptiedContainers":true,"ContentTypes":{"siteSettings":{"Properties":[],"Containers":["legacyTab"]}},"Sites":{"corporate":{"RootNodeKey":"5c2b4d7e-9f1a-4c3e-8b6d-2a1f0e9d8c7b","RootNodeName":"Corporate site","IsDefault":false,"ContentTypes":{"landingPage":{"Properties":["bannerImage"],"Containers":[]}}}}}""";
+
+		Assert.That(RulesHash.Compute(AppsettingsWithRules()), Is.EqualTo(Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(canonical)))));
+	}
+
+	[Test]
+	public void The_rules_hash_covers_rule_sets_and_includes_but_not_the_order_of_an_include()
+	{
+		PropertyVisibilityOptions options = AppsettingsWithRules();
+		var withoutRuleSets = RulesHash.Compute(options);
+
+		options.RuleSets["simplePages"] = new RuleSetOptions { ContentTypes = { ["landingPage"] = new ContentTypeVisibilityOptions { Containers = ["seoTab"] } } };
+		options.RuleSets["tracking"] = new RuleSetOptions();
+		var withRuleSets = RulesHash.Compute(options);
+
+		options.Sites["corporate"].Include = ["simplePages", "tracking"];
+		var withInclude = RulesHash.Compute(options);
+
+		options.Sites["corporate"].Include = ["tracking", "simplePages"];
+		var reordered = RulesHash.Compute(options);
+
+		options.RuleSets["simplePages"].ContentTypes["landingPage"].Containers = ["shareTab"];
+		var changedRule = RulesHash.Compute(options);
+
+		Assert.Multiple(() =>
+		{
+			Assert.That(withRuleSets, Is.Not.EqualTo(withoutRuleSets));
+			Assert.That(withInclude, Is.Not.EqualTo(withRuleSets));
+			Assert.That(reordered, Is.EqualTo(withInclude), "the order of Include is not a rule change");
+			Assert.That(changedRule, Is.Not.EqualTo(withInclude));
 		});
 	}
 

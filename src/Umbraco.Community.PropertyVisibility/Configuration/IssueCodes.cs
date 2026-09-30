@@ -4,7 +4,7 @@ namespace Umbraco.Community.PropertyVisibility.Configuration;
 ///     Stable issue codes reported by the validator, the API's <c>warnings</c> list and the health check.
 /// </summary>
 /// <remarks>
-///     <c>PV0xx</c> are structural configuration errors, <c>PV1xx</c> concern sites and roots, <c>PV2xx</c> concern
+///     <c>PV0xx</c> are structural configuration errors, <c>PV1xx</c> concern sites, rule sets and roots, <c>PV2xx</c> concern
 ///     content types, <c>PV3xx</c> are informational. Codes never change meaning once released.
 /// </remarks>
 public static class IssueCodes
@@ -47,6 +47,12 @@ public static class IssueCodes
 	/// </summary>
 	public const string ConfigurationInvalid = "PV008";
 
+	/// <summary>A site's <c>Include</c> names a rule set that does not exist.</summary>
+	public const string UnknownRuleSet = "PV009";
+
+	/// <summary>A rule set name contains a colon, which the configuration system reserves as a path separator.</summary>
+	public const string InvalidRuleSetName = "PV010";
+
 	/// <summary><c>RootNodeKey</c> is not a root node.</summary>
 	public const string RootNodeKeyNotARoot = "PV101";
 
@@ -64,6 +70,9 @@ public static class IssueCodes
 
 	/// <summary>A site matched by key but its configured <c>RootNodeName</c> differs from the root's current name.</summary>
 	public const string RootNodeNameDrift = "PV105";
+
+	/// <summary>A rule set is not included by any site, so its rules never apply.</summary>
+	public const string UnusedRuleSet = "PV106";
 
 	/// <summary>A property alias does not exist on the content type.</summary>
 	public const string UnknownPropertyAlias = "PV201";
@@ -85,8 +94,13 @@ public static class IssueCodes
 	public const string CompositionRuleReach = "PV205";
 
 	/// <summary>
-	///     Appsettings defines rules (<c>ContentTypes</c> or <c>Sites</c>) while the rules file is in use; the file wins and
-	///     the appsettings rules are ignored.
+	///     Informational: a content type entry lists no properties and no containers (or is <c>null</c>), so it hides nothing.
+	/// </summary>
+	public const string EmptyContentTypeRule = "PV206";
+
+	/// <summary>
+	///     Appsettings defines rules (<c>ContentTypes</c>, <c>RuleSets</c> or <c>Sites</c>) while the rules file is in use;
+	///     the file wins and the appsettings rules are ignored.
 	/// </summary>
 	public const string BothSourcesDefineRules = "PV301";
 
