@@ -59,7 +59,7 @@ Blocks inside blocks (`17-blocks-nested`), creating a document at the content ro
 | Blocks in a document blueprint | Create a document blueprint from Corporate landing and open its `mainBlocks` `promoBanner`. | `overlayColour` shown: blueprints have no site. |
 | Block Grid inline editing | Turn on `inlineEditing` for `promoBanner` in the Blocks (grid) data type, hide `heading` (its first property) as well as `overlayColour` for Corporate site, open Corporate landing. | Documented limitation: `heading` is shown inline in the grid; in the block's modal `heading` and `overlayColour` are hidden. |
 
-The runs marked "pre-release, local" were made on a local working tree before the first release; they are run again on the release commit and recorded here with its commit.
+The runs marked "pre-release, local" were made on a local working tree before 1.0.0-rc.1. The block handling they exercise has not changed since (later releases changed the generated API client, which the acceptance suite covers, and the debug log); they are run again when it changes, and recorded here with that commit.
 
 | Date | Umbraco | Commit | Cases | Result |
 |---|---|---|---|---|

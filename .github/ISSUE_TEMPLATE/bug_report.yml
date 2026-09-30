@@ -12,7 +12,7 @@ body:
   id: "packageVersion"
   attributes:
     label: "Property Visibility version"
-    description: "The exact package version, for example 1.0.0-rc.1."
+    description: "The exact package version, for example 1.0.0."
   validations:
     required: true
 - type: input

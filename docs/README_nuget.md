@@ -11,10 +11,10 @@ It changes what editors see, not what they are allowed to do: hidden values are 
 ## Install
 
 ```
-dotnet add package Umbraco.Community.PropertyVisibility --prerelease
+dotnet add package Umbraco.Community.PropertyVisibility
 ```
 
-`--prerelease` is needed until 1.0.0 ships. Umbraco 17.6.2 or a later 17.x, .NET 10. No startup code is needed. For a trial site, use the 17.x templates (`dotnet new install Umbraco.Templates::17.7.0`): on an Umbraco 18 site the install reports `NU1107`, which should not be worked around.
+Umbraco 17.6.2 or a later 17.x, .NET 10. No startup code is needed. For a trial site, use the 17.x templates (`dotnet new install Umbraco.Templates::17.7.0`): on an Umbraco 18 site the install reports `NU1107`, which should not be worked around.
 
 ## Single site
 
