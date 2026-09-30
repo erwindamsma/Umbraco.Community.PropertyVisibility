@@ -1,6 +1,6 @@
 import type { HiddenFieldsResponseModel, RootResolutionSource, SiteMatchReason } from '../api/index.js';
 import { LOG_PREFIX } from '../constants.js';
-import { debugLog, describeError, isDebugEnabled } from '../debug.js';
+import { countOf, debugLog, describeError, isDebugEnabled } from '../debug.js';
 import { peekPackageWarning } from '../package-warning.js';
 import { UmbPropertyVisibilityHiddenFieldsRepository } from '../repository/hidden-fields.repository.js';
 import { UMB_PROPERTY_VISIBILITY_SITE_CONTEXT } from './site.context-token.js';
@@ -87,6 +87,28 @@ function summarise(data: HiddenFieldsResponseModel): Record<string, unknown> {
 		containerKeyCount: data.containerKeys.length,
 		warnings: [...data.warnings],
 	};
+}
+
+/**
+ * The essentials of one response as text, for the debug message itself: a copied console line, a screenshot or a
+ * captured log shows the object after the message as "Object". The site with its match reason (or "no site" with the
+ * root resolution, or "disabled"), the counts and the warning codes; the site is its label, never a root node's key or
+ * name.
+ */
+function describeSummary(data: HiddenFieldsResponseModel): string {
+	const codes = data.warnings.map((warning) => /^PV\d{3}\b/.exec(warning)?.[0] ?? 'uncoded');
+	return [
+		describeSite(data),
+		countOf(data.propertyTypeKeys.length, 'property', 'properties'),
+		countOf(data.containerKeys.length, 'container', 'containers'),
+		codes.length === 0 ? 'no warnings' : `warnings ${codes.join(', ')}`,
+	].join(', ');
+}
+
+function describeSite(data: HiddenFieldsResponseModel): string {
+	if (data.disabled) return 'disabled';
+	if (data.matchedSite) return `site '${data.matchedSite.label}' (${data.matchedSite.reason})`;
+	return `no site (root ${data.rootResolution})`;
 }
 
 /**
@@ -215,7 +237,7 @@ export class UmbPropertyVisibilitySiteContext extends UmbContextBase {
 		}
 
 		if (isDebugEnabled()) {
-			debugLog(`hidden fields for content type ${contentTypeKey}`, {
+			debugLog(`hidden fields for content type ${contentTypeKey}: ${describeSummary(hidden)}`, {
 				documentKey,
 				parent: describeParent(parentKey),
 				contentTypeKey,

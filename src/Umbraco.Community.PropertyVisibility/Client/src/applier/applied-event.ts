@@ -1,5 +1,5 @@
 import { APPLIED_EVENT_NAME } from '../constants.js';
-import { debugLog } from '../debug.js';
+import { countOf, debugLog } from '../debug.js';
 
 /** What an applier works on: the document workspace, or a block's Content or Settings view. */
 export type UmbPropertyVisibilityAppliedTarget = 'document' | 'block-content' | 'block-settings';
@@ -36,6 +36,7 @@ declare global {
  */
 export function dispatchAppliedEvent(detail: UmbPropertyVisibilityAppliedEventDetail): void {
 	const frozen = Object.freeze({ ...detail });
-	debugLog(`applied (${frozen.target})`, { ...frozen });
+	const counts = `${countOf(frozen.propertyCount, 'property', 'properties')}, ${countOf(frozen.containerCount, 'container', 'containers')}`;
+	debugLog(`applied (${frozen.target}): ${counts}`, { ...frozen });
 	window.dispatchEvent(new CustomEvent(APPLIED_EVENT_NAME, { detail: frozen }));
 }

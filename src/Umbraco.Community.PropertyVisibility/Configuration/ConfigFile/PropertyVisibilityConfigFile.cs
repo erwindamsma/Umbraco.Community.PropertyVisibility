@@ -7,11 +7,11 @@ namespace Umbraco.Community.PropertyVisibility.Configuration.ConfigFile;
 ///     (<c>PropertyVisibility.config.json</c> next to appsettings.json by default).
 /// </summary>
 /// <remarks>
-///     When the file exists and parses, its <see cref="ContentTypes" /> and <see cref="Sites" /> replace the appsettings
-///     ones wholesale (no merge), and <see cref="HideEmptiedContainers" /> overrides the appsettings value when set.
-///     <see cref="PropertyVisibilityOptions.Enabled" /> and <see cref="PropertyVisibilityOptions.ConfigFile" /> are
-///     appsettings-only and are rejected here as unknown keys. Keys are case-insensitive; comments and trailing commas
-///     are allowed.
+///     When the file exists and parses, its <see cref="ContentTypes" />, <see cref="RuleSets" /> and <see cref="Sites" />
+///     replace the appsettings ones wholesale (no merge), and <see cref="HideEmptiedContainers" /> overrides the
+///     appsettings value when set. <see cref="PropertyVisibilityOptions.Enabled" /> and
+///     <see cref="PropertyVisibilityOptions.ConfigFile" /> are appsettings-only and are rejected here as unknown keys.
+///     Keys are case-insensitive; comments and trailing commas are allowed.
 /// </remarks>
 public sealed class PropertyVisibilityConfigFile
 {
@@ -33,6 +33,12 @@ public sealed class PropertyVisibilityConfigFile
 	///     Replaces <c>PropertyVisibility:ContentTypes</c> from appsettings.
 	/// </summary>
 	public Dictionary<string, ContentTypeVisibilityOptions> ContentTypes { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+
+	/// <summary>
+	///     Rules that several sites share, keyed by a free name; a site uses a set by naming it in its <c>Include</c>.
+	///     Replaces <c>PropertyVisibility:RuleSets</c> from appsettings.
+	/// </summary>
+	public Dictionary<string, RuleSetOptions> RuleSets { get; set; } = new(StringComparer.OrdinalIgnoreCase);
 
 	/// <summary>
 	///     Per-site rules keyed by a free label used in diagnostics. Replaces <c>PropertyVisibility:Sites</c> from appsettings.

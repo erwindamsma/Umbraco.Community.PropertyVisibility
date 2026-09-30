@@ -323,6 +323,78 @@ public sealed class PropertyVisibilityServiceTests
 	}
 
 	[Test]
+	public void The_rule_sets_a_site_includes_are_united_with_its_own_and_the_global_rules()
+	{
+		_options.RuleSets["simplePages"] = new RuleSetOptions
+		{
+			ContentTypes = { ["LandingPage"] = new ContentTypeVisibilityOptions { Properties = ["title"] } },
+		};
+		_options.RuleSets["notIncluded"] = new RuleSetOptions
+		{
+			ContentTypes = { ["landingPage"] = new ContentTypeVisibilityOptions { Properties = ["metaTitle"] } },
+		};
+		_options.Sites["campaign"].Include = ["SimplePages", "simplePages"];
+
+		HiddenFieldsResponseModel campaign = _service.GetHiddenFields(CampaignPage, _landingPage.Key, parentKey: null);
+		HiddenFieldsResponseModel other = _service.GetHiddenFields(OtherPage, _landingPage.Key, parentKey: null);
+
+		Assert.Multiple(() =>
+		{
+			// Global relatedLinks, campaign's own metaKeywords, and title from the rule set it includes.
+			Assert.That(campaign.PropertyTypeKeys, Is.EquivalentTo(PropertyKeys(_landingPage, "relatedLinks", "metaKeywords", "title")));
+			Assert.That(campaign.MatchedSite!.Label, Is.EqualTo("campaign"));
+			Assert.That(campaign.Warnings, Is.Empty);
+			Assert.That(other.PropertyTypeKeys, Is.EquivalentTo(PropertyKeys(_landingPage, "relatedLinks", "bannerImage")), "the default site includes no rule set");
+		});
+	}
+
+	[Test]
+	public void A_rule_set_entry_keyed_by_a_composition_applies_to_the_composing_type_on_the_including_site_only()
+	{
+		IContentType siteSettings = Document("siteSettings")
+			.Tab("legacyTab")
+			.Group("legacyTab/general", "siteTitle")
+			.Group("analytics", "trackingCode", "tagManagerId")
+			.Build();
+		IContentType site = Document("site").ComposedOf(siteSettings).Build();
+		_contentTypeService.Setup(service => service.Get(site.Key)).Returns(site);
+		_options.RuleSets["tracking"] = new RuleSetOptions
+		{
+			ContentTypes = { ["siteSettings"] = new ContentTypeVisibilityOptions { Properties = ["trackingCode"] } },
+		};
+		_options.Sites["corporate"].Include = ["tracking"];
+
+		HiddenFieldsResponseModel corporate = _service.GetHiddenFields(CorporatePage, site.Key, parentKey: null);
+		HiddenFieldsResponseModel campaign = _service.GetHiddenFields(CampaignPage, site.Key, parentKey: null);
+
+		Assert.Multiple(() =>
+		{
+			// The global siteSettings rule (legacyTab) on both sites, the rule set's trackingCode on corporate only.
+			Assert.That(corporate.PropertyTypeKeys, Is.EquivalentTo(PropertyKeys(siteSettings, "siteTitle", "trackingCode")));
+			Assert.That(campaign.PropertyTypeKeys, Is.EquivalentTo(PropertyKeys(siteSettings, "siteTitle")));
+			Assert.That(corporate.Warnings, Is.Empty);
+		});
+	}
+
+	[Test]
+	public void An_include_without_a_rule_set_is_skipped_when_the_options_were_not_validated()
+	{
+		_options.Sites["corporate"].Include = ["missing"];
+		_options.RuleSets["nullSet"] = null!;
+		_options.Sites["campaign"].Include = ["nullSet"];
+
+		HiddenFieldsResponseModel corporate = _service.GetHiddenFields(CorporatePage, _landingPage.Key, parentKey: null);
+		HiddenFieldsResponseModel campaign = _service.GetHiddenFields(CampaignPage, _landingPage.Key, parentKey: null);
+
+		Assert.Multiple(() =>
+		{
+			Assert.That(corporate.PropertyTypeKeys, Does.Contain(PropertyKey(_landingPage, "bannerImage")), "the site's own rules still apply");
+			Assert.That(campaign.PropertyTypeKeys, Is.EquivalentTo(PropertyKeys(_landingPage, "relatedLinks", "metaKeywords")));
+			Assert.That(_logger.At(LogLevel.Error), Is.Empty);
+		});
+	}
+
+	[Test]
 	public void Parent_key_is_passed_to_the_root_resolver()
 	{
 		var newPage = Guid.NewGuid();

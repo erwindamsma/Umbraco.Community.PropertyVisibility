@@ -26,6 +26,11 @@ export function debugLog(message: string, data?: Record<string, unknown>): void 
 	}
 }
 
+/** A count with its noun (`1 property`, `2 properties`), for the summaries in the text of the debug lines. */
+export function countOf(count: number, singular: string, plural: string): string {
+	return `${count} ${count === 1 ? singular : plural}`;
+}
+
 /**
  * Name, message and HTTP status of an error, for every console line the package writes about one. Never the error
  * object itself: an API error carries the request, whose URL holds the `parentKey` of a new document, often a site

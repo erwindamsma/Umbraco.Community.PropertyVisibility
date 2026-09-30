@@ -15,13 +15,14 @@ namespace Umbraco.Community.PropertyVisibility.Services;
 /// <remarks>
 ///     <para>
 ///         Order: the options (a binding or validation failure is <see cref="IssueCodes.ConfigurationInvalid" />, with the
-///         validator's <c>PV003</c> to <c>PV007</c> lines; nothing else about the rules can be checked then), the load
-///         issues of <see cref="IConfigurationInfo" /> (<c>PV001</c>, <c>PV002</c>, <c>PV301</c>), the kill switch
-///         (<c>PV302</c>), the sites against the root nodes (<c>PV101</c>, <c>PV102</c>; a name whose root another site
-///         holds by key is checked through the real <see cref="ISiteMatcher" /> too), every root node through the real
-///         <see cref="ISiteMatcher" /> (<c>PV103</c>, <c>PV105</c>), the content type entries (<c>PV104</c>, <c>PV201</c>,
-///         <c>PV202</c>, <c>PV203</c>, and the informational <c>PV205</c> for an entry keyed by a composition; global
-///         entries once, site entries per site) and the Umbraco version (<c>PV303</c>).
+///         validator's <c>PV003</c> to <c>PV007</c> and <c>PV009</c> lines; nothing else about the rules can be checked
+///         then), the load issues of <see cref="IConfigurationInfo" /> (<c>PV001</c>, <c>PV002</c>, <c>PV301</c>), the
+///         kill switch (<c>PV302</c>), the sites against the root nodes (<c>PV101</c>, <c>PV102</c>; a name whose root
+///         another site holds by key is checked through the real <see cref="ISiteMatcher" /> too), every root node through
+///         the real <see cref="ISiteMatcher" /> (<c>PV103</c>, <c>PV105</c>), rule sets no site includes (<c>PV106</c>),
+///         the content type entries (<c>PV104</c>, <c>PV201</c>, <c>PV202</c>, <c>PV203</c>, the informational
+///         <c>PV205</c> for an entry keyed by a composition and <c>PV206</c> for an entry that hides nothing; global
+///         entries once, each rule set's entries once, site entries per site) and the Umbraco version (<c>PV303</c>).
 ///     </para>
 ///     <para>
 ///         Aliases are resolved exactly as a request resolves them: content type aliases case-insensitively and untrimmed,
@@ -44,6 +45,9 @@ public sealed partial class ConfigurationAnalyzer : IConfigurationAnalyzer
 	// The shortest value that counts as contained in a suggestion, and below which only an exact (case-insensitive) match
 	// is suggested.
 	private const int MinContainedLength = 3;
+
+	// How the messages name the top-level ContentTypes entries.
+	private const string GlobalScope = "the global rules";
 
 	private readonly IOptionsMonitor<PropertyVisibilityOptions> _options;
 	private readonly IConfigurationInfo _configurationInfo;
@@ -122,6 +126,7 @@ public sealed partial class ConfigurationAnalyzer : IConfigurationAnalyzer
 
 			AnalyzeSites(options, rootNames, issues);
 			AnalyzeRoots(options, rootNames, issues);
+			AnalyzeRuleSets(options, issues);
 			AnalyzeContentTypes(options, issues);
 		}
 
@@ -448,8 +453,27 @@ public sealed partial class ConfigurationAnalyzer : IConfigurationAnalyzer
 				issues.Add(new ConfigurationAnalysisIssue(
 					IssueCodes.RootWithoutSite,
 					IssueSeverity.Warning,
-					$"The root node {rootNames.Describe(root)} matches no site and no site is the default; only the global rules apply to its documents. Add a site with this RootNodeKey or RootNodeName, or mark one site IsDefault.",
+					$"The root node {rootNames.Describe(root)} matches no site and no site is the default; only the global rules apply to its documents. Add a site with this RootNodeKey; for a root that is not a site, such as a settings or shared content root, give that site no rules. A site marked IsDefault also ends this warning, but for every root no other site matches, roots added later included.",
 					Path: nameof(PropertyVisibilityOptions.Sites)));
+			}
+		}
+	}
+
+	// A rule set that no site includes never applies. A set included only by a site that never matches is reported
+	// through that site (PV101, PV102).
+	private static void AnalyzeRuleSets(PropertyVisibilityOptions options, List<ConfigurationAnalysisIssue> issues)
+	{
+		foreach (var name in options.RuleSets.Keys)
+		{
+			var included = options.Sites.Values.Any(site =>
+				site?.Include?.Any(include => string.Equals(include, name, StringComparison.OrdinalIgnoreCase)) == true);
+			if (!included)
+			{
+				issues.Add(new ConfigurationAnalysisIssue(
+					IssueCodes.UnusedRuleSet,
+					IssueSeverity.Warning,
+					$"Rule set '{name}' is not included by any site, so its rules never apply. Add it to the Include of the sites that should use it, or remove it.",
+					Path: $"{nameof(PropertyVisibilityOptions.RuleSets)}:{name}"));
 			}
 		}
 	}
@@ -468,7 +492,9 @@ public sealed partial class ConfigurationAnalyzer : IConfigurationAnalyzer
 
 	private void AnalyzeContentTypes(PropertyVisibilityOptions options, List<ConfigurationAnalysisIssue> issues)
 	{
-		var anyEntries = options.ContentTypes.Count > 0 || options.Sites.Values.Any(site => site?.ContentTypes.Count > 0);
+		var anyEntries = options.ContentTypes.Count > 0
+			|| options.RuleSets.Values.Any(ruleSet => ruleSet?.ContentTypes.Count > 0)
+			|| options.Sites.Values.Any(site => site?.ContentTypes.Count > 0);
 		if (!anyEntries)
 		{
 			return;
@@ -493,35 +519,53 @@ public sealed partial class ConfigurationAnalyzer : IConfigurationAnalyzer
 			}
 		}
 
-		AnalyzeContentTypeEntries(options.ContentTypes, siteLabel: null, nameof(PropertyVisibilityOptions.ContentTypes), contentTypes, composedOf, issues);
+		AnalyzeContentTypeEntries(options.ContentTypes, siteLabel: null, GlobalScope, nameof(PropertyVisibilityOptions.ContentTypes), contentTypes, composedOf, issues);
+
+		foreach ((var name, RuleSetOptions ruleSet) in options.RuleSets)
+		{
+			if (ruleSet is not null)
+			{
+				var path = $"{nameof(PropertyVisibilityOptions.RuleSets)}:{name}:{nameof(RuleSetOptions.ContentTypes)}";
+				AnalyzeContentTypeEntries(ruleSet.ContentTypes, siteLabel: null, $"rule set '{name}'", path, contentTypes, composedOf, issues);
+			}
+		}
 
 		foreach ((var label, SiteVisibilityOptions site) in options.Sites)
 		{
 			if (site is not null)
 			{
-				AnalyzeContentTypeEntries(site.ContentTypes, label, $"Sites:{label}:{nameof(SiteVisibilityOptions.ContentTypes)}", contentTypes, composedOf, issues);
+				var path = $"{nameof(PropertyVisibilityOptions.Sites)}:{label}:{nameof(SiteVisibilityOptions.ContentTypes)}";
+				AnalyzeContentTypeEntries(site.ContentTypes, label, $"site '{label}'", path, contentTypes, composedOf, issues);
 			}
 		}
 	}
 
+	// Scope is how the messages name where the entries are: the global rules, "rule set 'x'" or "site 'x'".
 	private void AnalyzeContentTypeEntries(
 		Dictionary<string, ContentTypeVisibilityOptions> entries,
 		string? siteLabel,
+		string scope,
 		string parentPath,
 		Dictionary<string, IContentType> contentTypes,
 		Dictionary<string, SortedSet<string>> composedOf,
 		List<ConfigurationAnalysisIssue> issues)
 	{
-		var scope = siteLabel is null ? "the global rules" : $"site '{siteLabel}'";
-
-		foreach ((var alias, ContentTypeVisibilityOptions block) in entries)
+		foreach ((var alias, ContentTypeVisibilityOptions? block) in entries)
 		{
-			if (block is null)
+			var path = $"{parentPath}:{alias}";
+
+			// An entry without aliases hides nothing, whatever its content type; the other checks have nothing to check.
+			if (block is null || (block.Properties is not { Count: > 0 } && block.Containers is not { Count: > 0 }))
 			{
+				issues.Add(new ConfigurationAnalysisIssue(
+					IssueCodes.EmptyContentTypeRule,
+					IssueSeverity.Info,
+					$"Content type '{alias}' in {scope} lists no properties and no containers, so it hides nothing. Add aliases, or remove the entry.",
+					SiteLabel: siteLabel,
+					ContentTypeAlias: alias,
+					Path: path));
 				continue;
 			}
-
-			var path = $"{parentPath}:{alias}";
 
 			// Untrimmed, case-insensitive: exactly how a request looks the entry up.
 			if (!contentTypes.TryGetValue(alias, out IContentType? contentType))
@@ -598,7 +642,7 @@ public sealed partial class ConfigurationAnalyzer : IConfigurationAnalyzer
 				issues.Add(new ConfigurationAnalysisIssue(
 					IssueCodes.CompositionRuleReach,
 					IssueSeverity.Info,
-					DescribeCompositionReach(contentType.Alias, siteLabel, composers),
+					DescribeCompositionReach(contentType.Alias, scope, composers),
 					SiteLabel: siteLabel,
 					ContentTypeAlias: alias,
 					Path: path));
@@ -606,10 +650,10 @@ public sealed partial class ConfigurationAnalyzer : IConfigurationAnalyzer
 		}
 	}
 
-	private static string DescribeCompositionReach(string compositionAlias, string? siteLabel, SortedSet<string> composers)
+	private static string DescribeCompositionReach(string compositionAlias, string scope, SortedSet<string> composers)
 	{
 		const int listed = 10;
-		var rules = siteLabel is null ? "the global rules" : $"the rules of site '{siteLabel}'";
+		var rules = scope == GlobalScope ? GlobalScope : $"the rules of {scope}";
 		var types = composers.Count == 1 ? "1 content type" : $"{composers.Count} content types";
 		var list = string.Join(", ", composers.Take(listed));
 		if (composers.Count > listed)

@@ -102,8 +102,8 @@ public sealed partial class OptionsDocumentationTests
 
 	/// <summary>
 	///     Every settable option of the model as the table names it: <c>Name</c> for the root options,
-	///     <c>Sites:&lt;label&gt;:Name</c> for a site, <c>&lt;content type&gt;:Name</c> for a content type rule, with the
-	///     table's notation for its type and default.
+	///     <c>RuleSets:&lt;name&gt;:Name</c> for a rule set, <c>Sites:&lt;label&gt;:Name</c> for a site,
+	///     <c>&lt;content type&gt;:Name</c> for a content type rule, with the table's notation for its type and default.
 	/// </summary>
 	private static IEnumerable<(string Name, string Type, string Default)> ModelOptions()
 	{
@@ -113,6 +113,7 @@ public sealed partial class OptionsDocumentationTests
 				.Select(property => (prefix + property.Name, TypeNotation(property.PropertyType), DefaultNotation(property.GetValue(instance))));
 
 		return Describe(typeof(PropertyVisibilityOptions), string.Empty, new PropertyVisibilityOptions())
+			.Concat(Describe(typeof(RuleSetOptions), "RuleSets:<name>:", new RuleSetOptions()))
 			.Concat(Describe(typeof(SiteVisibilityOptions), "Sites:<label>:", new SiteVisibilityOptions()))
 			.Concat(Describe(typeof(ContentTypeVisibilityOptions), "<content type>:", new ContentTypeVisibilityOptions()));
 	}

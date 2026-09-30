@@ -142,6 +142,27 @@ public sealed class JsonSchemaTests
 		Assert.That(InvalidLocations(result), Has.Some.EqualTo("/Sites/corporate/ContentTypes/landingPage/Propertes"));
 	}
 
+	[Test]
+	public void ConfigFileSchema_accepts_rule_sets_and_rejects_a_misspelled_key_in_one()
+	{
+		const string rules = """
+			{
+				"RuleSets": { "simplePages": { "ContentTypes": { "landingPage": { "Containers": ["seoTab"] } } } },
+				"Sites": { "corporate": { "RootNodeKey": "5c2b4d7e-9f1a-4c3e-8b6d-2a1f0e9d8c7b", "Include": ["simplePages"] } }
+			}
+			""";
+
+		SchemaResult valid = Evaluate(ConfigFileSchemaFile, rules);
+		SchemaResult misspelled = Evaluate(ConfigFileSchemaFile, ReplaceFirst(rules, "\"ContentTypes\"", "\"ContentType\""));
+
+		Assert.Multiple(() =>
+		{
+			Assert.That(valid.IsValid, Is.True, Describe(valid));
+			Assert.That(misspelled.IsValid, Is.False);
+			Assert.That(InvalidLocations(misspelled), Has.Some.EqualTo("/RuleSets/simplePages/ContentType"));
+		});
+	}
+
 	[TestCase("Enabled", "false")]
 	[TestCase("ConfigFile", "\"other.json\"")]
 	public void ConfigFileSchema_rejects_appsettings_only_options(string key, string value)

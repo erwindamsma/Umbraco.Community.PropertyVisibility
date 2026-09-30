@@ -123,6 +123,68 @@ public sealed class PropertyVisibilityOptionsBindingTests
 	}
 
 	[Test]
+	public void Rule_sets_and_Include_bind()
+	{
+		const string withRuleSets = $$"""
+			{
+				"RuleSets": {
+					"simplePages": { "ContentTypes": { "landingPage": { "Containers": ["seoTab"] } } }
+				},
+				"Sites": {
+					"corporate": { "RootNodeKey": "{{CorporateKey}}", "Include": ["simplePages"] }
+				}
+			}
+			""";
+		using var configuration = new JsonConfiguration(JsonConfiguration.Appsettings(withRuleSets));
+
+		PropertyVisibilityOptions options = configuration.Monitor.CurrentValue;
+
+		Assert.Multiple(() =>
+		{
+			Assert.That(options.RuleSets["simplePages"].ContentTypes["landingPage"].Containers, Is.EqualTo(new[] { "seoTab" }));
+			Assert.That(options.Sites["corporate"].Include, Is.EqualTo(new[] { "simplePages" }));
+		});
+	}
+
+	[Test]
+	public void A_misspelled_key_inside_a_rule_set_throws()
+	{
+		const string misspelled = """{ "RuleSets": { "simplePages": { "ContentType": { "landingPage": { "Containers": ["seoTab"] } } } } }""";
+		using var configuration = new JsonConfiguration(JsonConfiguration.Appsettings(misspelled));
+
+		Assert.That(() => configuration.Monitor.CurrentValue, Throws.InvalidOperationException);
+	}
+
+	[Test]
+	public void An_include_of_a_rule_set_that_does_not_exist_fails_validation()
+	{
+		const string unknownRuleSet = $$"""{ "Sites": { "corporate": { "RootNodeKey": "{{CorporateKey}}", "Include": ["simplePages"] } } }""";
+		using var configuration = new JsonConfiguration(JsonConfiguration.Appsettings(unknownRuleSet));
+
+		OptionsValidationException? exception = Assert.Throws<OptionsValidationException>(() => _ = configuration.Monitor.CurrentValue);
+
+		Assert.That(exception!.Failures, Has.One.StartsWith(IssueCodes.UnknownRuleSet));
+	}
+
+	[Test]
+	public void A_null_content_type_entry_binds_as_an_entry_that_hides_nothing()
+	{
+		// The rules file turns a null entry into an empty one too; the health check reports both as PV206.
+		const string nullEntry = """{ "ContentTypes": { "landingPage": null, "article": { "Containers": ["shareTab"] } } }""";
+		using var configuration = new JsonConfiguration(JsonConfiguration.Appsettings(nullEntry));
+
+		PropertyVisibilityOptions options = configuration.Monitor.CurrentValue;
+
+		Assert.Multiple(() =>
+		{
+			Assert.That(options.ContentTypes["landingPage"], Is.Not.Null);
+			Assert.That(options.ContentTypes["landingPage"].Properties, Is.Empty);
+			Assert.That(options.ContentTypes["landingPage"].Containers, Is.Empty);
+			Assert.That(options.ContentTypes["article"].Containers, Is.EqualTo(new[] { "shareTab" }));
+		});
+	}
+
+	[Test]
 	public void A_structural_error_fails_validation()
 	{
 		const string siteWithoutIdentity = """{ "Sites": { "corporate": { "ContentTypes": {} } } }""";

@@ -10,7 +10,7 @@ When several sites in one Umbraco installation share a document type, some of it
 ## Features
 
 - Hide properties, tabs (with everything in them) and groups by alias, per document type or element type.
-- Rules for every site, or for one site, identified by its root node's key, its name, or as the default site.
+- Rules for every site, for one site, or in a rule set that several sites include; a site is identified by its root node's key, its name, or as the default site.
 - Works inside blocks: Block List, Block Grid, Single Block and rich text editor blocks, for the content and the settings of a block.
 - A rule keyed by a composition or a parent document type reaches every type composed of it.
 - Rules in appsettings or in a separate JSON file, reloaded without a restart, with JSON schemas for IntelliSense.

@@ -7,6 +7,7 @@ export interface Rule {
 
 /** The sample rules in the test site's appsettings.json that the document workspace and API specs rely on. */
 export const RULES = {
+	// Corporate's own landingPage entry united with the noBannerImage rule set it includes (bannerImage).
 	corporateLandingPage: {
 		properties: ['bannerImage', 'relatedLinks'],
 		containers: ['seoTab', 'settingsTab/advanced'],

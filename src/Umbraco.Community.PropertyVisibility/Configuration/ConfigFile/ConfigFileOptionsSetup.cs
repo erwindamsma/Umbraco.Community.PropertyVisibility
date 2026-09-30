@@ -14,8 +14,8 @@ namespace Umbraco.Community.PropertyVisibility.Configuration.ConfigFile;
 ///         Registered after the appsettings binding, so it sees the bound values. <see cref="PropertyVisibilityOptions.ConfigFile" />
 ///         is resolved against <see cref="IHostEnvironment.ContentRootPath" /> (an absolute path is used as is). An empty
 ///         value turns the file source off. A missing file, or one holding no JSON value (empty or only comments), is not
-///         an error: the appsettings rules apply. A file that parses replaces <see cref="PropertyVisibilityOptions.ContentTypes" />
-///         and <see cref="PropertyVisibilityOptions.Sites" /> wholesale and overrides
+///         an error: the appsettings rules apply. A file that parses replaces <see cref="PropertyVisibilityOptions.ContentTypes" />,
+///         <see cref="PropertyVisibilityOptions.RuleSets" /> and <see cref="PropertyVisibilityOptions.Sites" /> wholesale and overrides
 ///         <see cref="PropertyVisibilityOptions.HideEmptiedContainers" /> only when it sets it; <see cref="PropertyVisibilityOptions.Enabled" />
 ///         and <see cref="PropertyVisibilityOptions.ConfigFile" /> stay appsettings-only. UTF-8 is expected; a file with a
 ///         UTF-16 or UTF-32 byte order mark is transcoded.
@@ -255,12 +255,12 @@ public sealed class ConfigFileOptionsSetup : IConfigureOptions<PropertyVisibilit
 				content.Error);
 		}
 
-		if (options.ContentTypes.Count > 0 || options.Sites.Count > 0)
+		if (options.ContentTypes.Count > 0 || options.RuleSets.Count > 0 || options.Sites.Count > 0)
 		{
 			issues.Add(new ConfigurationIssue(
 				IssueCodes.BothSourcesDefineRules,
 				IssueSeverity.Warning,
-				$"Both appsettings ({PropertyVisibilityOptions.SectionName}:ContentTypes / Sites) and the rules file '{configured}' define rules; the file wins and the appsettings rules are ignored.",
+				$"Both appsettings ({PropertyVisibilityOptions.SectionName}:ContentTypes / RuleSets / Sites) and the rules file '{configured}' define rules; the file wins and the appsettings rules are ignored.",
 				PropertyVisibilityOptions.SectionName));
 			LogBothSourcesOnce(signature, configured);
 		}
@@ -281,7 +281,7 @@ public sealed class ConfigFileOptionsSetup : IConfigureOptions<PropertyVisibilit
 
 	private bool PassesValidation(ConfigFileRules rules)
 	{
-		// The validator only looks at ContentTypes and Sites, which the file replaces wholesale.
+		// The validator only looks at ContentTypes, RuleSets and Sites, which the file replaces wholesale.
 		var probe = new PropertyVisibilityOptions();
 		rules.ApplyTo(probe);
 		return IsValid(probe);
@@ -337,7 +337,7 @@ public sealed class ConfigFileOptionsSetup : IConfigureOptions<PropertyVisibilit
 
 		_lastLoggedBothSources = signature;
 		_logger.LogWarning(
-			"{IssueCode}: both appsettings ({Section}:ContentTypes / Sites) and the rules file {ConfigFile} define rules; the file wins and the appsettings rules are ignored.",
+			"{IssueCode}: both appsettings ({Section}:ContentTypes / RuleSets / Sites) and the rules file {ConfigFile} define rules; the file wins and the appsettings rules are ignored.",
 			IssueCodes.BothSourcesDefineRules,
 			PropertyVisibilityOptions.SectionName,
 			configured);

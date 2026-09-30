@@ -15,6 +15,8 @@ The automated suites run in CI; the cases that cannot be automated are run by ha
 
 For a clean acceptance run, stop the test site, delete `src/Umbraco.Community.PropertyVisibility.TestSite/umbraco/Data`, and start it again: the boot installs unattended on SQLite and imports the uSync set in `uSync/v17`. The acceptance suite creates an "Acceptance landing ...", an "Acceptance blocks ..." and an "Acceptance validation ..." (saved, not published) document under "Corporate site" on every run, and saves "Corporate landing" (its values stay the same). Spec `22` creates an "Acceptance root ..." document at the content root and deletes it again through the Management API. The seed has two languages (en-US, the default, and da-DK) and one culture-variant document, "Corporate variant page" (document type `variantPage`, both cultures published; uSync's first-boot import leaves its en-US variant as published with pending changes); every other document is invariant. Spec `20` makes `landingPage.metaTitle` and `promoBannerSettings.anchorId` mandatory through the Management API for the length of the test and sets them back in `finally` (the test site does not export to uSync on save, so the seed files never change).
 
+The specs expect the sample rules in the test site's `appsettings.json` (`support/expected.ts`). Corporate site and the default site get their `bannerImage` rule from a rule set both include (`noBannerImage`), so the specs that check it (`04`, `05`, `07`, `22`) cover rule sets in the browser as well.
+
 The acceptance specs run serially in one worker, in file name order:
 
 | Spec | Covers |
