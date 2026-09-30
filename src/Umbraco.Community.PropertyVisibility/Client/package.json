@@ -13,10 +13,15 @@
 		"generate-client": "node scripts/generate-openapi.js https://localhost:44300/umbraco/swagger/property-visibility/swagger.json"
 	},
 	"devDependencies": {
-		"@hey-api/openapi-ts": "^0.85.2",
+		"@hey-api/openapi-ts": "^0.99.0",
 		"@umbraco-cms/backoffice": "^17.6.2",
 		"typescript": "^5.9.3",
 		"vite": "^7.3.1"
+	},
+	"overrides": {
+		"@hey-api/json-schema-ref-parser": {
+			"js-yaml": "^4.3.2"
+		}
 	},
 	"allowScripts": {
 		"esbuild": true

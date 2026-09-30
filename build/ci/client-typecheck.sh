@@ -6,9 +6,10 @@
 #   UMBRACO_CMS_VERSION=17.7.0 bash build/ci/client-typecheck.sh
 #
 # Works on a copy of the client in a temporary folder: the client's node_modules and lockfile stay as they are.
-# --force: a newer backoffice can require newer peers than the lockfile has (17.7.0 wants @hey-api/openapi-ts 0.99 or
-# later, the client generates its API client with 0.85); --force keeps the installed peers and accepts that conflict,
-# where --legacy-peer-deps would remove the backoffice's peers (lit, rxjs, @umbraco-ui/uui) and break the typings.
+# --force: a newer backoffice can require a peer outside the range of one of the client's own dev dependencies (for
+# example an @hey-api/openapi-ts range above the client's ^0.99.0; 17.7.0 installs without a conflict); --force keeps the
+# installed peers and accepts that conflict, where --legacy-peer-deps would remove the backoffice's peers (lit, rxjs,
+# @umbraco-ui/uui) and break the typings.
 source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 
 [ -n "$UMBRACO_CMS_VERSION" ] || fail "set UMBRACO_CMS_VERSION to the Umbraco version whose backoffice typings to check against"

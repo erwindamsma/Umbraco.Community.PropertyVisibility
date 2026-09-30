@@ -6,8 +6,6 @@
 #     output folder and one at the staticwebassets root, and a content file (content/appsettings.Production.json)
 #   - a package without LICENSE, and one without THIRD-PARTY-NOTICES.md
 #   - a client.gen chunk (the Hey API client code) without its licence banner
-#   - a chunk that contains the Hey API buildClientParams code ($body_ in the client.gen chunk, $query_ in the bundle
-#     file property-visibility.js), the code path of advisory GHSA-hhx9-57xq-r5rw
 #   - an umbraco-package.json whose version differs from the package version
 #   - an Umbraco dependency that declares one exact version instead of the supported range
 #
@@ -43,7 +41,6 @@ trap 'rm -rf "$work"' EXIT
 # corrupt <case> remove <entry>                        copy of the package without that entry
 # corrupt <case> set-version <entry> <version>         copy with the "version" of a JSON entry replaced
 # corrupt <case> strip <entry> <text>                  copy with every occurrence of the text removed from that entry
-# corrupt <case> append <entry> <text>                 copy with the text appended to that entry
 # corrupt <case> set-dependency <dependency> <version> copy whose nuspec declares another version for that dependency
 corrupt() {
 	local case=$1
@@ -59,7 +56,7 @@ with zipfile.ZipFile(source) as original, zipfile.ZipFile(target, "w", zipfile.Z
     names = original.namelist()
     if mode == "add" and entry in names:
         sys.exit(f"{entry} is already in the package")
-    if mode in ("remove", "set-version", "strip", "append") and entry not in names:
+    if mode in ("remove", "set-version", "strip") and entry not in names:
         sys.exit(f"{entry} is not in the package")
     for info in original.infolist():
         if mode == "remove" and info.filename == entry:
@@ -75,8 +72,6 @@ with zipfile.ZipFile(source) as original, zipfile.ZipFile(target, "w", zipfile.Z
             if removed not in data:
                 sys.exit(f"'{sys.argv[5]}' is not in {entry}")
             data = data.replace(removed, b"")
-        if mode == "append" and info.filename == entry:
-            data = data + sys.argv[5].encode("utf-8")
         if mode == "set-dependency" and info.filename.endswith(".nuspec"):
             pattern = r'(<dependency id="' + re.escape(entry) + r'" version=")[^"]*(")'
             text, count = re.subn(pattern, lambda m: m.group(1) + sys.argv[5] + m.group(2), data.decode("utf-8"))
@@ -136,13 +131,6 @@ api_chunk=$(unzip -Z1 "$original" | grep -E "^$assets/client\.gen-[A-Za-z0-9_-]+
 [ -n "$api_chunk" ] || fail "$original has no $assets/client.gen-<hash>.js"
 corrupt hey-api-notice strip "$api_chunk" "Copyright (c) Hey API"
 expect_rejected hey-api-notice "does not carry the Hey API licence notice"
-
-# The prefixes buildClientParams maps (src/api/core/params.gen.ts), in the chunk that holds the client code and in the
-# bundle file the manifest loads: every chunk is searched.
-corrupt hey-api-build-client-params-body append "$api_chunk" ';const e={$body_:"body",$headers_:"headers"};'
-expect_rejected hey-api-build-client-params-body "contains \$body_"
-corrupt hey-api-build-client-params-query append "$assets/property-visibility.js" ';const e={$path_:"path",$query_:"query"};'
-expect_rejected hey-api-build-client-params-query "contains \$query_"
 
 corrupt manifest-version set-version "$manifest_entry" 9.9.9
 expect_rejected manifest-version "umbraco-package.json says version 9.9.9"
