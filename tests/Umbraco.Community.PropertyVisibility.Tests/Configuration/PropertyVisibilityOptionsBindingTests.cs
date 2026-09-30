@@ -167,6 +167,18 @@ public sealed class PropertyVisibilityOptionsBindingTests
 	}
 
 	[Test]
+	public void A_null_include_fails_validation()
+	{
+		// The binder keeps a JSON null in a list; the rules file drops it instead.
+		const string nullInclude = $$"""{ "Sites": { "corporate": { "RootNodeKey": "{{CorporateKey}}", "Include": [null] } } }""";
+		using var configuration = new JsonConfiguration(JsonConfiguration.Appsettings(nullInclude));
+
+		OptionsValidationException? exception = Assert.Throws<OptionsValidationException>(() => _ = configuration.Monitor.CurrentValue);
+
+		Assert.That(exception!.Failures, Is.EqualTo(new[] { "PV009 (Sites:corporate:Include): Site 'corporate' has an empty rule set name in Include." }));
+	}
+
+	[Test]
 	public void A_null_content_type_entry_binds_as_an_entry_that_hides_nothing()
 	{
 		// The rules file turns a null entry into an empty one too; the health check reports both as PV206.

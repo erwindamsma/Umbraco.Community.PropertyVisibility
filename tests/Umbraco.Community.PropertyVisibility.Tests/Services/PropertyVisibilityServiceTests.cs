@@ -431,6 +431,24 @@ public sealed class PropertyVisibilityServiceTests
 	}
 
 	[Test]
+	public void Include_matches_rule_set_names_case_insensitively_even_with_a_case_sensitive_dictionary()
+	{
+		_options.RuleSets = new Dictionary<string, RuleSetOptions>
+		{
+			["simplePages"] = new() { ContentTypes = { ["landingPage"] = new() { Properties = ["title"] } } },
+		};
+		_options.Sites["campaign"].Include = ["SIMPLEPAGES", "SimplePages"];
+
+		HiddenFieldsResponseModel campaign = _service.GetHiddenFields(CampaignPage, _landingPage.Key, parentKey: null);
+
+		Assert.Multiple(() =>
+		{
+			Assert.That(campaign.PropertyTypeKeys, Is.EquivalentTo(PropertyKeys(_landingPage, "relatedLinks", "metaKeywords", "title")));
+			Assert.That(IncludedRuleSets.Of(_options, _options.Sites["campaign"]), Has.Count.EqualTo(1), "each rule set once");
+		});
+	}
+
+	[Test]
 	public void Hide_emptied_containers_option_is_passed_to_the_resolver()
 	{
 		_options.ContentTypes.Clear();

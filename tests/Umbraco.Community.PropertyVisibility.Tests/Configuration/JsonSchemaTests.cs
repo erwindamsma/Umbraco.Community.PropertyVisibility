@@ -82,14 +82,27 @@ public sealed class JsonSchemaTests
 	}
 
 	[Test]
-	public void AppSettingsSchema_rejects_a_misspelled_key_inside_a_site_rule()
+	public void AppSettingsSchema_rejects_a_misspelled_key_inside_a_rule_set_rule()
 	{
 		var appSettings = ReplaceFirst(TestSiteAppSettings, "\"Properties\"", "\"Propertes\"");
 
 		var result = Evaluate(AppSettingsSchemaFile, appSettings);
 
 		Assert.That(result.IsValid, Is.False);
-		Assert.That(InvalidLocations(result), Has.Some.EndsWith("/Propertes"));
+		Assert.That(InvalidLocations(result), Has.Some.EqualTo("/PropertyVisibility/RuleSets/noBannerImage/ContentTypes/landingPage/Propertes"));
+	}
+
+	[Test]
+	public void AppSettingsSchema_rejects_a_misspelled_key_inside_a_site_rule()
+	{
+		var sites = TestSiteAppSettings.IndexOf("\"Sites\"", StringComparison.Ordinal);
+		Assert.That(sites, Is.GreaterThanOrEqualTo(0), "'\"Sites\"' not found in the sample");
+		var appSettings = TestSiteAppSettings[..sites] + ReplaceFirst(TestSiteAppSettings[sites..], "\"Properties\"", "\"Propertes\"");
+
+		var result = Evaluate(AppSettingsSchemaFile, appSettings);
+
+		Assert.That(result.IsValid, Is.False);
+		Assert.That(InvalidLocations(result), Has.Some.EqualTo("/PropertyVisibility/Sites/corporate/ContentTypes/landingPage/Propertes"));
 	}
 
 	[Test]

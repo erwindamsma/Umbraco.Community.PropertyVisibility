@@ -243,6 +243,25 @@ public sealed class PropertyVisibilityOptionsValidatorTests
 		return issue.Suggestion;
 	}
 
+	[TestCase(null)]
+	[TestCase("")]
+	[TestCase(" ")]
+	public void An_empty_include_is_PV009_without_a_name_in_the_message(string? included)
+	{
+		PropertyVisibilityOptions options = SampleOptions();
+		options.RuleSets["seo"] = new RuleSetOptions();
+		options.Sites["corporate"].Include = ["seo", included!];
+
+		ConfigurationIssue issue = SingleError(options);
+
+		Assert.Multiple(() =>
+		{
+			Assert.That(issue.Code, Is.EqualTo(IssueCodes.UnknownRuleSet));
+			Assert.That(issue.Message, Is.EqualTo("Site 'corporate' has an empty rule set name in Include."));
+			Assert.That(issue.Suggestion, Is.Null);
+		});
+	}
+
 	[Test]
 	public void Rule_set_name_with_a_colon_is_PV010()
 	{

@@ -453,7 +453,7 @@ public sealed partial class ConfigurationAnalyzer : IConfigurationAnalyzer
 				issues.Add(new ConfigurationAnalysisIssue(
 					IssueCodes.RootWithoutSite,
 					IssueSeverity.Warning,
-					$"The root node {rootNames.Describe(root)} matches no site and no site is the default; only the global rules apply to its documents. Add a site with this RootNodeKey; for a root that is not a site, such as a settings or shared content root, give that site no rules. A site marked IsDefault also ends this warning, but for every root no other site matches, roots added later included.",
+					$"The root node {rootNames.Describe(root)} matches no site and no site is the default; only the global rules apply to its documents. Add a site with this RootNodeKey; for a root that is not a site, such as a settings or shared content root, give that site no rules. A site marked IsDefault also ends this warning, but that site then takes every root no other site matches, roots added later included, and applies its rules there.",
 					Path: nameof(PropertyVisibilityOptions.Sites)));
 			}
 		}

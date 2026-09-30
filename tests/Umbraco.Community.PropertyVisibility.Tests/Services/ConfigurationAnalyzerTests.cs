@@ -339,7 +339,7 @@ public sealed class ConfigurationAnalyzerTests
 		Assert.Multiple(() =>
 		{
 			Assert.That(issue.Message, Does.Contain("Add a site with this RootNodeKey; for a root that is not a site, such as a settings or shared content root, give that site no rules."));
-			Assert.That(issue.Message, Does.EndWith("A site marked IsDefault also ends this warning, but for every root no other site matches, roots added later included."));
+			Assert.That(issue.Message, Does.EndWith("A site marked IsDefault also ends this warning, but that site then takes every root no other site matches, roots added later included, and applies its rules there."));
 		});
 	}
 
@@ -784,6 +784,28 @@ public sealed class ConfigurationAnalyzerTests
 				Is.EqualTo(new[] { IssueCodes.EmptyContentTypeRule }),
 				"no other check, although siteSettings is a composition (PV205)");
 			Assert.That(analysis.IsHealthy, Is.True, "informational only");
+		});
+	}
+
+	[Test]
+	public void Rule_set_entries_are_checked_when_they_are_the_only_entries()
+	{
+		_site.Options.ContentTypes.Clear();
+		foreach (SiteVisibilityOptions site in _site.Options.Sites.Values)
+		{
+			site.ContentTypes.Clear();
+		}
+
+		_site.Options.RuleSets["simplePages"] = new RuleSetOptions { ContentTypes = { ["landingPage"] = Block(["bannerImge"]) } };
+		_site.Options.Sites["campaign"].Include = ["simplePages"];
+
+		ConfigurationAnalysis analysis = Analyze();
+
+		ConfigurationAnalysisIssue issue = Single(analysis, IssueCodes.UnknownPropertyAlias);
+		Assert.Multiple(() =>
+		{
+			Assert.That(issue.Path, Is.EqualTo("RuleSets:simplePages:ContentTypes:landingPage:Properties"));
+			Assert.That(issue.Suggestion, Is.EqualTo("bannerImage"));
 		});
 	}
 

@@ -120,7 +120,9 @@ public sealed partial class PropertyVisibilityOptionsValidator : IValidateOption
 					issues.Add(new ConfigurationIssue(
 						IssueCodes.UnknownRuleSet,
 						IssueSeverity.Error,
-						$"Site '{label}' includes the rule set '{included}', which does not exist under RuleSets.",
+						string.IsNullOrWhiteSpace(included)
+							? $"Site '{label}' has an empty rule set name in Include."
+							: $"Site '{label}' includes the rule set '{included}', which does not exist under RuleSets.",
 						$"{path}:Include",
 						included is null ? null : ConfigurationAnalyzer.Suggest(included, options.RuleSets.Keys)));
 				}

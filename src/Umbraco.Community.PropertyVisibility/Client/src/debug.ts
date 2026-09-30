@@ -16,13 +16,15 @@ export function isDebugEnabled(): boolean {
  * Writes one `console.debug` line with the package prefix when the debug flag is on.
  * Callers pass an explicit summary object, never a whole response: the log must not carry the key or name of a
  * site root node (the server does not send them, and nothing here may add them back).
+ * The prefix goes first as its own argument: the console reads only the first argument as a format string, so a `%`
+ * in the message (a site label such as `50%off`) prints as written instead of taking the data object.
  */
 export function debugLog(message: string, data?: Record<string, unknown>): void {
 	if (!isDebugEnabled()) return;
 	if (data === undefined) {
-		console.debug(`${LOG_PREFIX} ${message}`);
+		console.debug(LOG_PREFIX, message);
 	} else {
-		console.debug(`${LOG_PREFIX} ${message}`, data);
+		console.debug(LOG_PREFIX, message, data);
 	}
 }
 

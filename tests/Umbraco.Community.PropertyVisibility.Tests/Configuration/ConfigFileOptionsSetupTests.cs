@@ -447,6 +447,23 @@ public sealed class ConfigFileOptionsSetupTests
 	}
 
 	[Test]
+	public void A_null_include_in_the_file_is_dropped()
+	{
+		// As a null alias in Properties and Containers. Appsettings keeps it, and the validator reports it (PV009).
+		_environment.WriteFile(
+			FileName,
+			"""{ "RuleSets": { "simplePages": {} }, "Sites": { "campaign": { "RootNodeName": "Campaign site", "Include": [null, "simplePages"] } } }""");
+
+		PropertyVisibilityOptions options = Load();
+
+		Assert.Multiple(() =>
+		{
+			Assert.That(options.Sites["campaign"].Include, Is.EqualTo(new[] { "simplePages" }));
+			Assert.That(_info.Issues, Is.Empty);
+		});
+	}
+
+	[Test]
 	public void Rule_sets_alone_in_appsettings_next_to_the_file_are_PV301()
 	{
 		_environment.WriteFile(FileName, FileSample);
