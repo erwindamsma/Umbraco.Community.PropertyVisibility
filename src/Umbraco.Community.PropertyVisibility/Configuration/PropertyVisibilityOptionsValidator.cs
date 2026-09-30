@@ -1,13 +1,14 @@
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Options;
-using Umbraco.Community.PropertyVisibility.Configuration.ConfigFile;
+using Umbraco.Community.PropertyVisibility.Services;
 
 namespace Umbraco.Community.PropertyVisibility.Configuration;
 
 /// <summary>
 ///     Validates the structural rules of <see cref="PropertyVisibilityOptions" />: every site has an identity,
 ///     identities are unique, at most one default, container aliases have a non-empty tab or group alias before any
-///     <c>/</c> and a non-empty rest after it, labels carry no colon, and every rule set a site includes exists.
+///     <c>/</c> and a non-empty rest after it, site labels and rule set names carry no colon, and every rule set a site
+///     includes exists.
 /// </summary>
 /// <remarks>
 ///     Everything that depends on the environment (unknown content types, unknown aliases, missing roots) is a
@@ -33,6 +34,15 @@ public sealed partial class PropertyVisibilityOptionsValidator : IValidateOption
 
 		foreach ((var name, RuleSetOptions? ruleSet) in options.RuleSets)
 		{
+			if (name.Contains(':'))
+			{
+				issues.Add(new ConfigurationIssue(
+					IssueCodes.InvalidRuleSetName,
+					IssueSeverity.Error,
+					$"Rule set name '{name}' contains a colon; colons are reserved as configuration path separators.",
+					$"RuleSets:{name}"));
+			}
+
 			CollectContainerAliasIssues(ruleSet?.ContentTypes, $"RuleSets:{name}:ContentTypes", issues);
 		}
 
@@ -112,7 +122,7 @@ public sealed partial class PropertyVisibilityOptionsValidator : IValidateOption
 						IssueSeverity.Error,
 						$"Site '{label}' includes the rule set '{included}', which does not exist under RuleSets.",
 						$"{path}:Include",
-						included is null ? null : ConfigFileParser.Suggest(included, options.RuleSets.Keys)));
+						included is null ? null : ConfigurationAnalyzer.Suggest(included, options.RuleSets.Keys)));
 				}
 			}
 

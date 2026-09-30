@@ -50,6 +50,9 @@ public static class IssueCodes
 	/// <summary>A site's <c>Include</c> names a rule set that does not exist.</summary>
 	public const string UnknownRuleSet = "PV009";
 
+	/// <summary>A rule set name contains a colon, which the configuration system reserves as a path separator.</summary>
+	public const string InvalidRuleSetName = "PV010";
+
 	/// <summary><c>RootNodeKey</c> is not a root node.</summary>
 	public const string RootNodeKeyNotARoot = "PV101";
 

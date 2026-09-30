@@ -226,6 +226,40 @@ public sealed class PropertyVisibilityOptionsValidatorTests
 		});
 	}
 
+	[TestCase("seo ", ExpectedResult = "seo")]
+	[TestCase("faq", ExpectedResult = null)]
+	[TestCase("blog", ExpectedResult = null)]
+	[TestCase("", ExpectedResult = null)]
+	public string? PV009_suggests_only_a_close_rule_set_name(string included)
+	{
+		PropertyVisibilityOptions options = SampleOptions();
+		options.RuleSets["seo"] = new RuleSetOptions();
+		options.RuleSets["simplePages"] = new RuleSetOptions();
+		options.Sites["corporate"].Include = ["seo", "simplePages", included];
+
+		ConfigurationIssue issue = SingleError(options);
+
+		Assert.That(issue.Code, Is.EqualTo(IssueCodes.UnknownRuleSet));
+		return issue.Suggestion;
+	}
+
+	[Test]
+	public void Rule_set_name_with_a_colon_is_PV010()
+	{
+		var options = new PropertyVisibilityOptions();
+		options.RuleSets["shared:seo"] = new RuleSetOptions();
+
+		ConfigurationIssue issue = SingleError(options);
+
+		Assert.Multiple(() =>
+		{
+			Assert.That(issue.Code, Is.EqualTo(IssueCodes.InvalidRuleSetName));
+			Assert.That(issue.Code, Is.EqualTo("PV010"));
+			Assert.That(issue.Path, Is.EqualTo("RuleSets:shared:seo"));
+			Assert.That(issue.Message, Is.EqualTo("Rule set name 'shared:seo' contains a colon; colons are reserved as configuration path separators."));
+		});
+	}
+
 	[Test]
 	public void Each_include_without_a_rule_set_is_its_own_PV009()
 	{

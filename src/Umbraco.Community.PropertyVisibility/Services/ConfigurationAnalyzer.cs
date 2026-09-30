@@ -15,9 +15,9 @@ namespace Umbraco.Community.PropertyVisibility.Services;
 /// <remarks>
 ///     <para>
 ///         Order: the options (a binding or validation failure is <see cref="IssueCodes.ConfigurationInvalid" />, with the
-///         validator's <c>PV003</c> to <c>PV007</c> and <c>PV009</c> lines; nothing else about the rules can be checked
-///         then), the load issues of <see cref="IConfigurationInfo" /> (<c>PV001</c>, <c>PV002</c>, <c>PV301</c>), the
-///         kill switch (<c>PV302</c>), the sites against the root nodes (<c>PV101</c>, <c>PV102</c>; a name whose root
+///         validator's <c>PV003</c> to <c>PV007</c>, <c>PV009</c> and <c>PV010</c> lines; nothing else about the rules can
+///         be checked then), the load issues of <see cref="IConfigurationInfo" /> (<c>PV001</c>, <c>PV002</c>, <c>PV301</c>),
+///         the kill switch (<c>PV302</c>), the sites against the root nodes (<c>PV101</c>, <c>PV102</c>; a name whose root
 ///         another site holds by key is checked through the real <see cref="ISiteMatcher" /> too), every root node through
 ///         the real <see cref="ISiteMatcher" /> (<c>PV103</c>, <c>PV105</c>), rule sets no site includes (<c>PV106</c>),
 ///         the content type entries (<c>PV104</c>, <c>PV201</c>, <c>PV202</c>, <c>PV203</c>, the informational
@@ -554,19 +554,6 @@ public sealed partial class ConfigurationAnalyzer : IConfigurationAnalyzer
 		{
 			var path = $"{parentPath}:{alias}";
 
-			// An entry without aliases hides nothing, whatever its content type; the other checks have nothing to check.
-			if (block is null || (block.Properties is not { Count: > 0 } && block.Containers is not { Count: > 0 }))
-			{
-				issues.Add(new ConfigurationAnalysisIssue(
-					IssueCodes.EmptyContentTypeRule,
-					IssueSeverity.Info,
-					$"Content type '{alias}' in {scope} lists no properties and no containers, so it hides nothing. Add aliases, or remove the entry.",
-					SiteLabel: siteLabel,
-					ContentTypeAlias: alias,
-					Path: path));
-				continue;
-			}
-
 			// Untrimmed, case-insensitive: exactly how a request looks the entry up.
 			if (!contentTypes.TryGetValue(alias, out IContentType? contentType))
 			{
@@ -577,6 +564,19 @@ public sealed partial class ConfigurationAnalyzer : IConfigurationAnalyzer
 					SiteLabel: siteLabel,
 					ContentTypeAlias: alias,
 					Suggestion: Suggest(alias, contentTypes.Keys),
+					Path: path));
+				continue;
+			}
+
+			// An entry without aliases hides nothing; the other checks have nothing to check.
+			if (block is null || (block.Properties is not { Count: > 0 } && block.Containers is not { Count: > 0 }))
+			{
+				issues.Add(new ConfigurationAnalysisIssue(
+					IssueCodes.EmptyContentTypeRule,
+					IssueSeverity.Info,
+					$"Content type '{alias}' in {scope} lists no properties and no containers, so it hides nothing. Add aliases, or remove the entry.",
+					SiteLabel: siteLabel,
+					ContentTypeAlias: alias,
 					Path: path));
 				continue;
 			}
@@ -672,7 +672,8 @@ public sealed partial class ConfigurationAnalyzer : IConfigurationAnalyzer
 
 	private static bool TryParseValidationFailure(string failure, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out ConfigurationAnalysisIssue? issue)
 	{
-		// The validator reports each failure as ConfigurationIssue.ToString(): "PV003 (Sites:corporate): message".
+		// The validator reports each failure as ConfigurationIssue.ToString(): "PV003 (Sites:corporate): message", followed
+		// by " Did you mean 'x'?" when the issue has a suggestion (PV009).
 		Match match = ValidationFailurePattern().Match(failure);
 		if (!match.Success)
 		{
@@ -681,7 +682,8 @@ public sealed partial class ConfigurationAnalyzer : IConfigurationAnalyzer
 		}
 
 		var path = match.Groups["path"].Success ? match.Groups["path"].Value : null;
-		issue = FromConfigurationIssue(new ConfigurationIssue(match.Groups["code"].Value, IssueSeverity.Error, match.Groups["message"].Value, path));
+		var suggestion = match.Groups["suggestion"].Success ? match.Groups["suggestion"].Value : null;
+		issue = FromConfigurationIssue(new ConfigurationIssue(match.Groups["code"].Value, IssueSeverity.Error, match.Groups["message"].Value, path, suggestion));
 		return true;
 	}
 
@@ -700,7 +702,7 @@ public sealed partial class ConfigurationAnalyzer : IConfigurationAnalyzer
 	}
 
 	// The path ends at the first "): ", so a site label with parentheses, such as "Corporate (old)", stays in the path.
-	[GeneratedRegex(@"^(?<code>PV\d{3})(?: \((?<path>.*?)\))?: (?<message>.*)$", RegexOptions.Singleline | RegexOptions.CultureInvariant)]
+	[GeneratedRegex(@"^(?<code>PV\d{3})(?: \((?<path>.*?)\))?: (?<message>.*?)(?: Did you mean '(?<suggestion>.*)'\?)?$", RegexOptions.Singleline | RegexOptions.CultureInvariant)]
 	private static partial Regex ValidationFailurePattern();
 
 	/// <summary>
