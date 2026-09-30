@@ -34,28 +34,7 @@ The first stable release: 1.0.0-rc.3 with the `umbraco-marketplace` package tag,
 
 ### Known limitations
 
-Hiding changes what editors see, not what they may do. This is the list under [What it does not do](https://github.com/erwindamsma/Umbraco.Community.PropertyVisibility#what-it-does-not-do) in the README:
-
-- **It is not authorization.** Hiding is a backoffice user-interface feature. Hidden values stay in the document: they are loaded into the browser, saved with the document unchanged, readable and writable through the Management API, returned by the Delivery API and rendered on the website as before. To restrict who may read or change a property, use Umbraco's user group permissions (Document Property Value permissions, see [Users in the Umbraco documentation](https://docs.umbraco.com/umbraco-cms/manage-and-publish-content/users-and-members/users)).
-- **Hidden mandatory properties still block publishing.** Umbraco saves the document and reports that it could not be published, but shows no hint on the hidden field, so the editor cannot see why. The health check warns about every hidden mandatory property (`PV203`).
-- **No rules per user group.** Every user sees the same result. Umbraco's property permissions on user groups cover that.
-- **No rules per culture or segment.** A hidden property is hidden in every language.
-- **No rules per subtree or per document.** A site is a root node and everything under it.
-- **No media types or member types.** Rules apply to documents and to blocks in documents. Document blueprints hide nothing.
-- **Blocks outside documents get nothing hidden**: blocks in media items, members and document blueprints, also when those are opened from inside a document.
-- **Block Grid inline editing shows a block's first property** regardless of the rules, because Umbraco renders it without the property view guard. The block's modal hides it.
-- **Block labels can show hidden values**: a label template that uses a hidden property still shows it.
-- **Only the document and block editors change.** Collection (list view) columns, the content tree, search, preview and the website show hidden properties as before.
-- **No per-site property editor configuration.** The package does not change labels, descriptions, the order of properties or tabs, data type settings, or the block types a property allows.
-- **Tabs and groups are removed through an Umbraco API that is not a documented extension point.** Umbraco has a view guard for properties but none for tabs and groups, so the package removes them from the workspace's in-memory structure (`removeContainer`). Each Umbraco minor is re-verified before it is listed as supported. If a version drops that method, properties stay hidden, the emptied tabs and groups stay visible, and the backoffice shows one warning.
-- **A content type whose every property is hidden keeps its Content view.** The view shows no fields; when every tab and group was removed, it shows Umbraco's "Not found" message after a few seconds.
-- **Hidden fields can show for a moment.** The rules arrive with a request the backoffice sends when a document or block opens, so its fields can render for that one round trip before they are hidden.
-- **Rule changes reach a document when it is opened again.** An open document, and the blocks in it, keep the rules they were opened with.
-- **A document type changed while a document is open does not reach that document** once a tab or group was hidden in it. Reopen the document.
-- **Name matching on culture-variant roots uses the default-culture name as of the last save.** Use `RootNodeKey` where you can.
-- **No per-site rules in the recycle bin.** A trashed document matches no site, not even the default one; only the top-level `ContentTypes` apply until it is restored.
-- **Errors never hide more.** Rules that cannot be read or fail validation (`PV008`), a failed request or an unknown content type hide nothing; a broken edit of the rules file keeps the last valid version. When the package's request fails, the backoffice shows one Property Visibility warning until the page is reloaded, instead of Umbraco's generic error notification on every document.
-- **Umbraco 17 only**, from 17.6.2.
+Hiding changes what editors see, not what they may do: hidden values are still saved, readable and writable through the Management API, and returned by the Delivery API. Hidden mandatory properties still block publishing. Hidden fields can show for one round trip while the rules load. There are no rules per user group or per culture, and none for media or member types. The complete list is under [What it does not do](https://github.com/erwindamsma/Umbraco.Community.PropertyVisibility#what-it-does-not-do) in the README.
 
 ## [1.0.0-rc.3] - 2026-09-30
 
