@@ -20,10 +20,10 @@ When several sites in one Umbraco installation share a document type, some of it
 ## Quick start
 
 ```
-dotnet add package Umbraco.Community.PropertyVisibility --prerelease
+dotnet add package Umbraco.Community.PropertyVisibility
 ```
 
-(`--prerelease` is needed until 1.0.0 ships.) Add this section to `appsettings.json`, next to the existing `Umbraco` section, replace the example aliases with your own, save, and reopen a document:
+Add this section to `appsettings.json`, next to the existing `Umbraco` section, replace the example aliases with your own, save, and reopen a document:
 
 ```json
 {

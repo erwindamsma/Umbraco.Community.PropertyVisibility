@@ -16,7 +16,7 @@
 		<Description>Hide properties, groups and tabs per site in the Umbraco backoffice</Description>
 		<Authors>Erwin Damsma</Authors>
 		<Copyright>Copyright (c) 2026 Erwin Damsma</Copyright>
-		<PackageTags>umbraco backoffice multisite property-visibility</PackageTags>
+		<PackageTags>umbraco umbraco-marketplace backoffice multisite property-visibility</PackageTags>
 		<PackageIcon>icon.png</PackageIcon>
 		<PackageReadmeFile>README_nuget.md</PackageReadmeFile>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
