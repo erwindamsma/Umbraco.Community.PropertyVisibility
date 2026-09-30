@@ -38,7 +38,7 @@ _The health check reports rules that do not resolve, with an issue code and a su
 dotnet add package Umbraco.Community.PropertyVisibility --prerelease
 ```
 
-The first release is a prerelease (`1.0.0-rc.1`), so `--prerelease` is needed until 1.0.0 ships. The package needs Umbraco 17.6.2 or a later 17.x on .NET 10 (see [Supported Umbraco versions](#supported-umbraco-versions)). It registers itself through a composer, so there is no startup code to add, and without rules it hides nothing. Build the site once after installing: the build copies the JSON schemas that give IntelliSense for the configuration.
+Until 1.0.0 ships, every release is a prerelease (`1.0.0-rc.*`), so `--prerelease` is needed. The package needs Umbraco 17.6.2 or a later 17.x on .NET 10 (see [Supported Umbraco versions](#supported-umbraco-versions)). It registers itself through a composer, so there is no startup code to add, and without rules it hides nothing. Build the site once after installing: the build copies the JSON schemas that give IntelliSense for the configuration.
 
 To try it on a new site, create that site from the 17.x templates (`dotnet new install Umbraco.Templates::17.7.0`). The current default templates create an Umbraco 18 site, where the install reports `NU1107` and the next restore fails; do not work around that error, because 1.x does not run on Umbraco 18.
 

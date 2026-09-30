@@ -6,6 +6,8 @@ The release workflow publishes the section whose heading matches the tag (`## [1
 
 ## [Unreleased]
 
+## [1.0.0-rc.2] - 2026-09-30
+
 ### Changed
 
 - The backoffice API client is regenerated with `@hey-api/openapi-ts` 0.99.0 (was 0.85.2); behaviour is unchanged.
