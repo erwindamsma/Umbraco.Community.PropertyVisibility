@@ -6,6 +6,8 @@ The release workflow publishes the section whose heading matches the tag (`## [1
 
 ## [Unreleased]
 
+## [1.0.0-rc.3] - 2026-09-30
+
 ### Added
 
 - Rule sets: rules that several sites share are written once under `RuleSets`, and each site names the sets it uses in `Include`. A site's rules are its own united with those of its rule sets, so a rule set can only add to what a site hides. A name in `Include` that matches no rule set is a configuration error (`PV009`: nothing is hidden until it is fixed), and so is a rule set name that contains `:` (`PV010`), as for a site label; a rule set that no site includes is a warning (`PV106`).
