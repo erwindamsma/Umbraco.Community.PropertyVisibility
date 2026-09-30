@@ -131,20 +131,6 @@ for pkg in "${packages[@]}"; do
     || fail "$api_chunks in $pkg does not carry the Hey API licence notice (the client build's banner) at its start"
   echo "$api_chunks carries the Hey API licence notice"
 
-  # The Hey API template's buildClientParams (src/api/core/params.gen.ts, re-exported by src/api/client/index.ts) is the
-  # code path of advisory GHSA-hhx9-57xq-r5rw in @hey-api/openapi-ts 0.85.2. Nothing in the client calls it, so the build
-  # leaves it out; its $body_ and $query_ prefixes in a shipped chunk mean a change started to use it.
-  while IFS= read -r chunk; do
-    [ -n "$chunk" ] || continue
-    chunk_code=$(unzip -p "$pkg" "$chunk")
-    for marker in '$body_' '$query_'; do
-      if grep -qF -- "$marker" <<< "$chunk_code"; then
-        fail "$chunk in $pkg contains $marker: the Hey API buildClientParams code of advisory GHSA-hhx9-57xq-r5rw ships; regenerate the client with @hey-api/openapi-ts 0.99 or later first"
-      fi
-    done
-  done < <(grep -E "^$assets/[^/]+\.js$" <<< "$listing" || true)
-  echo "No chunk contains the Hey API buildClientParams code"
-
   # buildTransitive/<id>.props is the package's own file (the SDK's generation is switched off): it must keep the
   # static web assets import the SDK would have written, and add the JSON schema items.
   transitive=$(unzip -p "$pkg" "buildTransitive/$id.props")

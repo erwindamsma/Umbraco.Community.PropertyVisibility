@@ -4,7 +4,7 @@ Property Visibility (Umbraco.Community.PropertyVisibility) is licensed under the
 
 ## Hey API openapi-ts (in the NuGet package)
 
-The backoffice client's HTTP client is generated from the client templates of [@hey-api/openapi-ts](https://github.com/hey-api/openapi-ts) (version 0.85.2). These files in the repository are copies of those templates:
+The backoffice client's HTTP client is generated from the client templates of [@hey-api/openapi-ts](https://github.com/hey-api/openapi-ts) (version 0.99.0). These files in the repository are copies of those templates:
 
 - `src/Umbraco.Community.PropertyVisibility/Client/src/api/core/auth.gen.ts`
 - `src/Umbraco.Community.PropertyVisibility/Client/src/api/core/bodySerializer.gen.ts`

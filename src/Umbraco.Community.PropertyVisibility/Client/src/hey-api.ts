@@ -13,8 +13,8 @@ import { umbHttpClient } from '@umbraco-cms/backoffice/http-client';
  * 401 / problem-details interceptors.
  *
  * The fields are picked one by one instead of spreading the whole configuration, so the serializers, headers and parse
- * mode stay those of this client's own generated runtime: Umbraco regenerates its client with newer
- * `@hey-api/openapi-ts` versions (17.7.0 ships a newer one than 17.6.2), whose option types differ from this client's.
+ * mode stay those of this client's own generated runtime: Umbraco generates its client with the `@hey-api/openapi-ts`
+ * version of each release (17.6.2 with an older one than this client), whose option types can differ from this client's.
  */
 export const createClientConfig: CreateClientConfig = (config) => {
 	const { auth, baseUrl, credentials, throwOnError } = umbHttpClient.getConfig();

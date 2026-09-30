@@ -6,6 +6,10 @@ The release workflow publishes the section whose heading matches the tag (`## [1
 
 ## [Unreleased]
 
+### Changed
+
+- The backoffice API client is regenerated with `@hey-api/openapi-ts` 0.99.0 (was 0.85.2); behaviour is unchanged.
+
 ## [1.0.0-rc.1] - 2026-09-29
 
 The first release, published as `1.0.0-rc.1`. It supports Umbraco 17.6.2 and later 17.x versions (verified on 17.6.2 and 17.7.0) on .NET 10.
