@@ -8,7 +8,7 @@ The release workflow publishes the section whose heading matches the tag (`## [1
 
 ### Changed
 
-- A new package icon: a tile split into two sites, with the middle field stopping at the split.
+- A new package icon.
 
 ## [1.0.0] - 2026-09-30
 
