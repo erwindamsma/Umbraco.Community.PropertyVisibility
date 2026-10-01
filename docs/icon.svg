@@ -1,14 +1,21 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="128" height="128">
 	<title>Property Visibility</title>
-	<!-- Tile -->
-	<rect x="4" y="4" width="120" height="120" rx="26" fill="#0F766E"/>
-	<!-- Form rows: the middle one is hidden (faded, shortened) -->
-	<rect x="20" y="22" width="88" height="16" rx="5" fill="#FFFFFF"/>
-	<rect x="20" y="56" width="48" height="16" rx="5" fill="#FFFFFF" fill-opacity="0.35"/>
-	<rect x="20" y="90" width="88" height="16" rx="5" fill="#FFFFFF"/>
-	<!-- Eye with a slash: the tile colour under the slash cuts the outline, the pupil stays whole -->
-	<path d="M77 64C84 54 91 50 97 50S110 54 117 64C110 74 103 78 97 78S84 74 77 64Z" fill="none" stroke="#FBBF24" stroke-width="4" stroke-linejoin="round"/>
-	<path d="M83 80L111 48" stroke="#0F766E" stroke-width="10" stroke-linecap="round"/>
-	<circle cx="97" cy="64" r="6.5" fill="#FBBF24"/>
-	<path d="M83 80L111 48" stroke="#FBBF24" stroke-width="4" stroke-linecap="round"/>
+	<defs>
+		<clipPath id="tile-shape">
+			<rect width="512" height="512" rx="112"/>
+		</clipPath>
+		<clipPath id="site-a-area">
+			<polygon points="0,0 324,0 188,512 0,512"/>
+		</clipPath>
+	</defs>
+	<!-- Tile, split diagonally into two sites: site A (raspberry) and site B (plum) -->
+	<g clip-path="url(#tile-shape)">
+		<rect width="512" height="512" fill="#D81B60"/>
+		<polygon points="324,0 512,0 512,512 188,512" fill="#3A1240"/>
+	</g>
+	<!-- Fields shown on both sites -->
+	<rect x="92" y="128" width="328" height="64" rx="32" fill="#FFFFFF"/>
+	<rect x="92" y="320" width="328" height="64" rx="32" fill="#FFFFFF"/>
+	<!-- Field hidden on site B: it stops at the split -->
+	<rect x="92" y="224" width="328" height="64" rx="32" fill="#FFFFFF" clip-path="url(#site-a-area)"/>
 </svg>

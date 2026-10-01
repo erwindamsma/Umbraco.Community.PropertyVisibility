@@ -6,6 +6,10 @@ The release workflow publishes the section whose heading matches the tag (`## [1
 
 ## [Unreleased]
 
+### Changed
+
+- A new package icon: a tile split into two sites, with the middle field stopping at the split.
+
 ## [1.0.0] - 2026-09-30
 
 The first stable release: 1.0.0-rc.3 with the `umbraco-marketplace` package tag, so that the Umbraco Marketplace lists it; the code is unchanged. It supports Umbraco 17.6.2 and later 17.x versions (verified on 17.6.2 and 17.7.0) on .NET 10. These notes describe the whole package; what changed between the release candidates is in [CHANGELOG.md](https://github.com/erwindamsma/Umbraco.Community.PropertyVisibility/blob/main/CHANGELOG.md).
