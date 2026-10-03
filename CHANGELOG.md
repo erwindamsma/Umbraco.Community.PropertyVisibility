@@ -6,6 +6,8 @@ The release workflow publishes the section whose heading matches the tag (`## [1
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-10-03
+
 ### Changed
 
 - A new package icon.
