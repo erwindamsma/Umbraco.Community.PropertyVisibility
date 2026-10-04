@@ -1,5 +1,5 @@
 {
-	"$schema": "./PropertyVisibility.config-schema.json",
+	"$schema": "./PropertyVisibility.config-schema.local.json",
 	"HideEmptiedContainers": true,
 	"ContentTypes": {
 		"siteSettings": { "Containers": ["legacyTab"] }

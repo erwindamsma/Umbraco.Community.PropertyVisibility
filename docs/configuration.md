@@ -284,7 +284,23 @@ On the first `dotnet build` after `dotnet add package`, Umbraco's build targets 
 - Property names are PascalCase. Loading is case-insensitive, so a camelCase key still works at runtime, but the editor marks it as not allowed.
 - Defaults shown: `Enabled` true, `ConfigFile` `"PropertyVisibility.config.json"`, `HideEmptiedContainers` true, `IsDefault` false. In the rules file `HideEmptiedContainers` has no default: when unset, appsettings applies.
 - The rules file schema rejects `Enabled` and `ConfigFile`, matching `PV002` at load time.
-- The copied schema files are build output. The Umbraco template's `.gitignore` already ignores `appsettings-schema*.json`; add `PropertyVisibility.config-schema.json` to it.
+- The copied schema files are build output. The Umbraco template's `.gitignore` already ignores `appsettings-schema*.json`; add `PropertyVisibility.config-schema*.json` to it, which also covers the alias schema below.
+
+### Your site's aliases
+
+The package schema knows the shape of the rules, not your aliases. In the Development environment the site therefore also writes `PropertyVisibility.config-schema.local.json` next to the rules file: the same schema, with this site's document type, element type, property, tab and group aliases and its root nodes filled in. Point the rules file at it:
+
+```json
+{
+  "$schema": "./PropertyVisibility.config-schema.local.json"
+}
+```
+
+The editor then completes the keys under `ContentTypes` with your content type aliases, `Properties` and `Containers` with the aliases of that content type (its compositions included), and `RootNodeKey` and `RootNodeName` with your root nodes. A misspelled alias or a key of a root node that does not exist is underlined while you type, before the rules load. Visual Studio Code also shows each value's name, its tab or group, whether it is mandatory and the composition it comes from.
+
+- The file is written only while the rules file exists, so a site that keeps its rules in appsettings gets no extra file, and only in the Development environment. It is written at startup, when a document or element type changes, when a root node is created, renamed, moved, trashed or deleted, and when the rules file is created or changed; only when its content changes. The first write is logged at Information level.
+- The schema expects the exact alias (`landingPage`); the package itself matches aliases case-insensitively, so `LandingPage` works but is underlined.
+- The file belongs to your local site: keep it out of source control (`PropertyVisibility.config-schema*.json` in `.gitignore`). A developer who has not run the site yet sees an editor warning that the schema cannot be loaded until the site has written it; the rules work either way.
 
 ## Health check
 

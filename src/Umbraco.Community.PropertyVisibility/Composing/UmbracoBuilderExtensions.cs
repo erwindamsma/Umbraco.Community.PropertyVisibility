@@ -51,6 +51,13 @@ public static class UmbracoBuilderExtensions
 		builder.Services.AddSingleton<Umbraco.Cms.Core.Events.INotificationHandler<UmbracoApplicationStartedNotification>>(
 			provider => provider.GetRequiredService<ConfigurationAnalysisLogger>());
 
+		// The alias schema next to the rules file, in Development only; the same singleton pattern as the logger.
+		builder.Services.AddSingleton<AliasSchemaWriter>();
+		builder.Services.AddSingleton<Umbraco.Cms.Core.Events.INotificationHandler<UmbracoApplicationStartedNotification>>(
+			provider => provider.GetRequiredService<AliasSchemaWriter>());
+		builder.Services.AddSingleton<Umbraco.Cms.Core.Events.INotificationHandler<ContentTypeChangedNotification>>(
+			provider => provider.GetRequiredService<AliasSchemaWriter>());
+
 		builder
 			.AddNotificationHandler<ContentSavedNotification, RootNodeNameCacheInvalidator>()
 			.AddNotificationHandler<ContentMovedNotification, RootNodeNameCacheInvalidator>()

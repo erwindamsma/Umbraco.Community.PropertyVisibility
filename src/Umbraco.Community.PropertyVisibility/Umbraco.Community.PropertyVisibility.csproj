@@ -75,6 +75,8 @@
 		<Content Remove="@(_PvJsonSchema)" />
 		<None Remove="@(_PvJsonSchema)" />
 		<None Include="@(_PvJsonSchema)" Pack="true" PackagePath="\" />
+		<!-- The base of the alias schema the site writes in Development (AliasSchemaBuilder). -->
+		<EmbeddedResource Include="PropertyVisibility.config-schema.json" LogicalName="Umbraco.Community.PropertyVisibility.PropertyVisibility.config-schema.json" />
 		<None Remove="buildTransitive\**" />
 		<None Include="buildTransitive\*.props" Pack="true" PackagePath="buildTransitive\" />
 	</ItemGroup>
