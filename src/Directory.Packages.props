@@ -18,7 +18,7 @@
 	</ItemGroup>
 
 	<ItemGroup Label="Test site">
-		<PackageVersion Include="uSync" Version="17.4.2" />
+		<PackageVersion Include="uSync" Version="17.4.3" />
 		<PackageVersion Include="Microsoft.ICU.ICU4C.Runtime" Version="72.1.0.3" />
 	</ItemGroup>
 
