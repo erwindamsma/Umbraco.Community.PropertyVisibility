@@ -6,6 +6,8 @@ The release workflow publishes the section whose heading matches the tag (`## [1
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-10-10
+
 ### Added
 
 - In the Development environment the site writes `PropertyVisibility.config-schema.local.json` next to the rules file: the rules file schema with this site's content type, property, tab and group aliases and its root nodes filled in. A rules file whose `$schema` points at it gets IntelliSense on the real aliases and root node keys, and a typo is underlined while it is typed instead of showing up in the health check. Written only while the rules file exists, only when the content changes, and again when a document type, element type or root node changes.
