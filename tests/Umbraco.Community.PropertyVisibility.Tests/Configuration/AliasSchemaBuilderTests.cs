@@ -131,6 +131,87 @@ public sealed class AliasSchemaBuilderTests
 	}
 
 	[Test]
+	public void Roots_with_the_same_name_are_listed_by_key_and_once_by_name()
+	{
+		Guid otherCorporateRoot = Guid.Parse("9a8b7c6d-5e4f-4a3b-8c2d-1e0f9a8b7c6d");
+		var schema = AliasSchemaBuilder.Build(
+			[_landingPage],
+			[new AliasSchemaRoot(CorporateRoot, "Corporate site"), new AliasSchemaRoot(otherCorporateRoot, "corporate site")]);
+		JsonObject site = JsonNode.Parse(schema)!["definitions"]!["SiteVisibilityOptions"]!["properties"]!.AsObject();
+
+		Assert.Multiple(() =>
+		{
+			Assert.That(Strings(site["RootNodeKey"]!["enum"]), Is.EqualTo(new[] { CorporateRoot.ToString(), otherCorporateRoot.ToString() }));
+			Assert.That(Strings(site["RootNodeName"]!["enum"]), Is.EqualTo(new[] { "Corporate site" }));
+			Assert.That(
+				Strings(site["RootNodeName"]!["enumDescriptions"]),
+				Is.EqualTo(new[] { $"{CorporateRoot}, {otherCorporateRoot}" }),
+				"the package matches a name case-insensitively, so it matches both roots");
+		});
+	}
+
+	[Test]
+	public void A_root_without_a_name_is_listed_by_key_only()
+	{
+		var schema = AliasSchemaBuilder.Build([_landingPage], [new AliasSchemaRoot(CorporateRoot, "Corporate site"), new AliasSchemaRoot(CampaignRoot, null)]);
+		JsonObject site = JsonNode.Parse(schema)!["definitions"]!["SiteVisibilityOptions"]!["properties"]!.AsObject();
+		var onlyNameless = AliasSchemaBuilder.Build([_landingPage], [new AliasSchemaRoot(CampaignRoot, " ")]);
+
+		Assert.Multiple(() =>
+		{
+			Assert.That(Strings(site["RootNodeKey"]!["enum"]), Is.EqualTo(new[] { CorporateRoot.ToString(), CampaignRoot.ToString() }));
+			Assert.That(Strings(site["RootNodeKey"]!["enumDescriptions"]), Is.EqualTo(new[] { "Corporate site", "(no name)" }));
+			Assert.That(Strings(site["RootNodeName"]!["enum"]), Is.EqualTo(new[] { "Corporate site" }));
+			Assert.That(
+				Strings(JsonNode.Parse(onlyNameless)!["definitions"]!["SiteVisibilityOptions"]!["properties"]!["RootNodeKey"]!["enumDescriptions"]),
+				Is.EqualTo(new[] { "(no name)" }));
+			Assert.That(
+				JsonSchemaValidation.Validate(onlyNameless, """{ "Sites": { "s": { "RootNodeName": "Anything" } } }"""),
+				Is.Empty,
+				"without a named root, RootNodeName stays as in the base schema");
+		});
+	}
+
+	[Test]
+	public void Aliases_reached_through_a_parent_and_its_composition_name_the_type_that_defines_them()
+	{
+		IContentType seo = Document("seoComposition").NamedTab("seoTab", "Seo").NamedGroup("seoTab/meta", "Meta", "canonicalUrl").Build();
+		IContentType basePage = Document("basePage").NamedGroup("main", "Main", "pageTitle").ComposedOf(seo).Build();
+		IContentType childPage = Document("childPage").Parent(basePage).NamedGroup("extra", "Extra", "childNote").Build();
+		var schema = AliasSchemaBuilder.Build([childPage, basePage, seo], []);
+		JsonObject child = Definition("childPage", schema);
+		var rules = """{ "ContentTypes": { "childPage": { "Properties": ["canonicalUrl", "pageTitle"], "Containers": ["seoTab/meta", "main"] } } }""";
+
+		Assert.Multiple(() =>
+		{
+			Assert.That((string?)child["description"], Does.StartWith("childPage (document type, composed of basePage, seoComposition)."));
+			Assert.That(Values(child, "Properties"), Is.EqualTo(new[] { "canonicalUrl", "childNote", "pageTitle" }));
+			Assert.That(Values(child, "Containers"), Is.EqualTo(new[] { "extra", "main", "seoTab", "seoTab/meta" }));
+			Assert.That(Description(child, "Properties", "canonicalUrl"), Is.EqualTo("'canonicalUrl', in seoTab/meta, from composition seoComposition"));
+			Assert.That(Description(child, "Properties", "pageTitle"), Is.EqualTo("'pageTitle', in main, from composition basePage"));
+			Assert.That(Description(child, "Properties", "childNote"), Is.EqualTo("'childNote', in extra"));
+			Assert.That(Description(child, "Containers", "seoTab"), Is.EqualTo("Tab 'Seo', from composition seoComposition"));
+			Assert.That(JsonSchemaValidation.Validate(schema, rules), Is.Empty);
+		});
+	}
+
+	[Test]
+	public void Content_types_whose_aliases_differ_only_in_case_give_one_entry_whatever_their_order()
+	{
+		IContentType lower = Document("landingPage").NamedGroup("main", "Main", "title").Build();
+		IContentType upper = Document("LandingPage").NamedGroup("other", "Other", "subtitle").Build();
+
+		var oneWay = AliasSchemaBuilder.Build([lower, upper], []);
+		var otherWay = AliasSchemaBuilder.Build([upper, lower], []);
+
+		Assert.Multiple(() =>
+		{
+			Assert.That(otherWay, Is.EqualTo(oneWay));
+			Assert.That(JsonNode.Parse(oneWay)!["properties"]!["ContentTypes"]!["properties"]!.AsObject(), Has.Count.EqualTo(1));
+		});
+	}
+
+	[Test]
 	public void Without_root_nodes_the_root_fields_stay_as_in_the_base_schema()
 	{
 		var schema = AliasSchemaBuilder.Build([_landingPage], []);
@@ -158,7 +239,8 @@ public sealed class AliasSchemaBuilderTests
 			AliasSchemaBuilder.Build(RepositoryFiles.Read(BaseSchemaFile), [_promoBanner, _landingPage, _siteSettings, _emptyElement], _roots),
 			Is.EqualTo(_schema));
 
-	private JsonObject Definition(string alias) => JsonNode.Parse(_schema)!["definitions"]![$"ContentType.{alias}"]!.AsObject();
+	private JsonObject Definition(string alias, string? schema = null)
+		=> JsonNode.Parse(schema ?? _schema)!["definitions"]![$"ContentType.{alias}"]!.AsObject();
 
 	private static string[] Values(JsonObject definition, string list)
 		=> Strings(definition["properties"]![list]!["items"]!["enum"]);

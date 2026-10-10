@@ -78,9 +78,9 @@ internal static class AliasSchemaBuilder
 
 		IContentType[] types = contentTypes
 			.Where(contentType => !string.IsNullOrWhiteSpace(contentType.Alias))
-			.DistinctBy(contentType => contentType.Alias, StringComparer.OrdinalIgnoreCase)
 			.OrderBy(contentType => contentType.Alias, StringComparer.OrdinalIgnoreCase)
 			.ThenBy(contentType => contentType.Alias, StringComparer.Ordinal)
+			.DistinctBy(contentType => contentType.Alias, StringComparer.OrdinalIgnoreCase)
 			.ToArray();
 
 		foreach (IContentType contentType in types)
@@ -153,9 +153,9 @@ internal static class AliasSchemaBuilder
 		var properties = new List<(string Value, string Description)>();
 		foreach (IPropertyType property in contentType.CompositionPropertyTypes
 			.Where(property => !string.IsNullOrWhiteSpace(property.Alias))
-			.DistinctBy(property => property.Alias, StringComparer.OrdinalIgnoreCase)
 			.OrderBy(property => property.Alias, StringComparer.OrdinalIgnoreCase)
-			.ThenBy(property => property.Alias, StringComparer.Ordinal))
+			.ThenBy(property => property.Alias, StringComparer.Ordinal)
+			.DistinctBy(property => property.Alias, StringComparer.OrdinalIgnoreCase))
 		{
 			var parts = new List<string> { $"'{property.Name}'" };
 			if (containerOfProperty.TryGetValue(property.Key, out var container))
@@ -226,11 +226,12 @@ internal static class AliasSchemaBuilder
 		JsonObject key = siteProperties["RootNodeKey"]!.AsObject();
 		key["type"] = "string";
 		key["enum"] = new JsonArray([.. roots.Select(root => (JsonNode)JsonValue.Create(root.Key.ToString("D")))]);
-		key["enumDescriptions"] = new JsonArray([.. roots.Select(root => (JsonNode)JsonValue.Create(root.Name ?? "(no name)"))]);
+		key["enumDescriptions"] = new JsonArray([.. roots.Select(root => (JsonNode)JsonValue.Create(string.IsNullOrWhiteSpace(root.Name) ? "(no name)" : root.Name))]);
 
-		AliasSchemaRoot[] named = roots
+		// The package matches a name case-insensitively, so a name lists every root that has it.
+		IGrouping<string, AliasSchemaRoot>[] named = roots
 			.Where(root => !string.IsNullOrWhiteSpace(root.Name))
-			.DistinctBy(root => root.Name!.Trim(), StringComparer.OrdinalIgnoreCase)
+			.GroupBy(root => root.Name!.Trim(), StringComparer.OrdinalIgnoreCase)
 			.ToArray();
 		if (named.Length == 0)
 		{
@@ -239,7 +240,7 @@ internal static class AliasSchemaBuilder
 
 		JsonObject name = siteProperties["RootNodeName"]!.AsObject();
 		name["type"] = "string";
-		name["enum"] = new JsonArray([.. named.Select(root => (JsonNode)JsonValue.Create(root.Name!))]);
-		name["enumDescriptions"] = new JsonArray([.. named.Select(root => (JsonNode)JsonValue.Create(root.Key.ToString("D")))]);
+		name["enum"] = new JsonArray([.. named.Select(group => (JsonNode)JsonValue.Create(group.First().Name!))]);
+		name["enumDescriptions"] = new JsonArray([.. named.Select(group => (JsonNode)JsonValue.Create(string.Join(", ", group.Select(root => root.Key.ToString("D")))))]);
 	}
 }
