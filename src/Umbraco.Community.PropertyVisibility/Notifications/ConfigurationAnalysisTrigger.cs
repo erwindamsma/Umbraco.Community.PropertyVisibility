@@ -3,32 +3,35 @@ namespace Umbraco.Community.PropertyVisibility.Notifications;
 /// <summary>
 ///     Asks <see cref="ConfigurationAnalysisLogger" /> for a new run when the root nodes change after startup (a root is
 ///     created, renamed, moved, trashed or deleted), so a site that stops matching is logged when it happens and not only at
-///     the next configuration change.
+///     the next configuration change. <see cref="AliasSchemaWriter" /> listens too, for the root nodes in its schema.
 /// </summary>
 /// <remarks>
 ///     A singleton with no dependencies, so the content notification handlers that use it
 ///     (<see cref="RootNodeNameCacheInvalidator" />) never depend on the package's options: a content save must not fail
-///     because of the package's configuration. The logger subscribes when it is created; requests made before that are
-///     dropped, because its startup run covers them. The logger merges requests and runs in the background.
+///     because of the package's configuration. A listener subscribes when it is created; requests made before that are
+///     dropped, because its startup run covers them. Each listener merges requests and runs in the background.
 /// </remarks>
 public sealed class ConfigurationAnalysisTrigger
 {
 	private readonly object _gate = new();
-	private Action? _listener;
+	private readonly List<Action> _listeners = [];
 	private HashSet<Guid>? _analyzedRoots;
 
 	/// <summary>
-	///     Asks for a new analysis run.
+	///     Asks every listener for a new run.
 	/// </summary>
 	public void Request()
 	{
-		Action? listener;
+		Action[] listeners;
 		lock (_gate)
 		{
-			listener = _listener;
+			listeners = [.. _listeners];
 		}
 
-		listener?.Invoke();
+		foreach (Action listener in listeners)
+		{
+			listener();
+		}
 	}
 
 	/// <summary>
@@ -65,7 +68,7 @@ public sealed class ConfigurationAnalysisTrigger
 	}
 
 	/// <summary>
-	///     Sets the listener that runs the analysis; replaces an earlier one.
+	///     Adds a listener.
 	/// </summary>
 	/// <param name="listener">Queues a run; must return quickly.</param>
 	/// <returns>Removes the listener again.</returns>
@@ -74,7 +77,7 @@ public sealed class ConfigurationAnalysisTrigger
 		ArgumentNullException.ThrowIfNull(listener);
 		lock (_gate)
 		{
-			_listener = listener;
+			_listeners.Add(listener);
 		}
 
 		return new Subscription(this, listener);
@@ -84,10 +87,7 @@ public sealed class ConfigurationAnalysisTrigger
 	{
 		lock (_gate)
 		{
-			if (_listener == listener)
-			{
-				_listener = null;
-			}
+			_listeners.Remove(listener);
 		}
 	}
 

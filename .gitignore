@@ -42,6 +42,8 @@ node_modules/
 src/Umbraco.Community.PropertyVisibility.TestSite/appsettings-schema*.json
 src/Umbraco.Community.PropertyVisibility.TestSite/umbraco-package-schema.json
 src/Umbraco.Community.PropertyVisibility.TestSite/PropertyVisibility.config-schema.json
+# The alias schema the test site writes in Development next to an existing rules file (AliasSchemaWriter).
+src/Umbraco.Community.PropertyVisibility.TestSite/PropertyVisibility.config-schema.local.json
 
 # An active rules file, anywhere: the test site's (copied from PropertyVisibility.config.sample.json, or written by the
 # acceptance suite while it runs) or one dropped into another project folder. The sample stays tracked; appsettings is

@@ -104,6 +104,43 @@ export function getDocument(page: Page, key: string): Promise<DocumentModel> {
 }
 
 /**
+ * Creates an invariant document without values through the Management API (saved, not published) and resolves with
+ * its key: at the content root, or under `parentKey`. Delete it again with deleteDocument in a `finally` block.
+ */
+export async function createDocument(page: Page, documentTypeKey: string, name: string, parentKey?: string): Promise<string> {
+	const id = crypto.randomUUID();
+	const { status, body } = await backofficeFetch(page, '/umbraco/management/api/v1/document', {
+		method: 'POST',
+		body: {
+			id,
+			parent: parentKey ? { id: parentKey } : null,
+			documentType: { id: documentTypeKey },
+			template: null,
+			values: [],
+			variants: [{ culture: null, segment: null, name }],
+		},
+	});
+	if (status !== 201) {
+		throw new Error(`POST /umbraco/management/api/v1/document returned ${status}: ${JSON.stringify(body)}`);
+	}
+	return id;
+}
+
+/**
+ * Renames an invariant document made by createDocument (saved, not published). The update replaces every value, so it
+ * is only for a document without values.
+ */
+export async function renameDocument(page: Page, key: string, name: string): Promise<void> {
+	const { status, body } = await backofficeFetch(page, `/umbraco/management/api/v1/document/${key}`, {
+		method: 'PUT',
+		body: { template: null, values: [], variants: [{ culture: null, segment: null, name }] },
+	});
+	if (status !== 200) {
+		throw new Error(`PUT /umbraco/management/api/v1/document/${key} returned ${status}: ${JSON.stringify(body)}`);
+	}
+}
+
+/**
  * Deletes a document the suite created, with everything under it: straight away, or through the recycle bin when the
  * API only deletes trashed documents. A document that is already gone is fine.
  */
