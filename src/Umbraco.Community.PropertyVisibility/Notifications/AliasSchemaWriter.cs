@@ -32,7 +32,7 @@ namespace Umbraco.Community.PropertyVisibility.Notifications;
 ///         operation that triggered the run.
 ///     </para>
 /// </remarks>
-public sealed class AliasSchemaWriter :
+internal sealed class AliasSchemaWriter :
 	INotificationHandler<UmbracoApplicationStartedNotification>,
 	INotificationHandler<ContentTypeChangedNotification>,
 	IDisposable

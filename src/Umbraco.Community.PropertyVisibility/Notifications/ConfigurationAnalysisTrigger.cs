@@ -3,7 +3,7 @@ namespace Umbraco.Community.PropertyVisibility.Notifications;
 /// <summary>
 ///     Asks <see cref="ConfigurationAnalysisLogger" /> for a new run when the root nodes change after startup (a root is
 ///     created, renamed, moved, trashed or deleted), so a site that stops matching is logged when it happens and not only at
-///     the next configuration change. <see cref="AliasSchemaWriter" /> listens too, for the root nodes in its schema.
+///     the next configuration change. The alias schema writer listens too, for the root nodes in its schema.
 /// </summary>
 /// <remarks>
 ///     A singleton with no dependencies, so the content notification handlers that use it
