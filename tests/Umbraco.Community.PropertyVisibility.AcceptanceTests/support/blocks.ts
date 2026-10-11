@@ -60,6 +60,12 @@ export function waitForBlockApplied(
 	);
 }
 
+/** The block applied events (not the document's) recorded in the page at or after a browser wall-clock time. */
+export async function blockEventsSince(page: Page, since: number): Promise<AppliedEvent[]> {
+	const events = await page.evaluate(() => (window as unknown as { __pvApplied?: AppliedEvent[] }).__pvApplied ?? []);
+	return events.filter((event) => event.at >= since && event.target !== 'document');
+}
+
 /**
  * Opens one of the seeded landing pages (a full page load) and waits until the document and its inline blocks have
  * applied: the inline promoBanner (content and settings) and the inline callToAction (content) of `inlineBlocks`. Their
@@ -82,13 +88,13 @@ export function documentProperty(scope: Page | Locator, alias: string): Locator 
 }
 
 /**
- * The block entries of one element type in a Block List or Block Grid property (the entry reflects its content element
- * type alias as `data-content-element-type-alias`), in document order.
+ * The block entries of one element type in a Block List, Block Grid or Single Block property (the entry reflects its
+ * content element type alias as `data-content-element-type-alias`), in document order.
  */
 export function blockEntries(scope: Page | Locator, blockPropertyAlias: string, elementTypeAlias: string): Locator {
 	const selector = `[data-content-element-type-alias="${elementTypeAlias}"]`;
 	return documentProperty(scope, blockPropertyAlias).locator(
-		`umb-block-list-entry${selector}, umb-block-grid-entry${selector}`,
+		`umb-block-list-entry${selector}, umb-block-grid-entry${selector}, umb-block-single-entry${selector}`,
 	);
 }
 
@@ -217,12 +223,12 @@ export async function openBlockModal(
 // ---- Inline editing ------------------------------------------------------------------------------------------------
 
 /**
- * Expands an inline-edited Block List entry (umb-inline-list-block) and resolves with its inline editor. The inline
- * block's workspace, and with it the package's block context, exists as soon as the entry renders, before it is
- * expanded.
+ * Expands an inline-edited Block List or Single Block entry (umb-inline-list-block, umb-inline-single-block) and
+ * resolves with its inline editor. The inline block's workspace, and with it the package's block context, exists as
+ * soon as the entry renders, before it is expanded.
  */
 export async function expandInlineBlock(entry: Locator): Promise<Locator> {
-	const inline = entry.locator('umb-inline-list-block').first();
+	const inline = entry.locator('umb-inline-list-block, umb-inline-single-block').first();
 	const editor = inline.locator('umb-block-workspace-view-edit-content-no-router').first();
 	if ((await editor.count()) === 0) {
 		await inline.locator('button#open-part').first().click();
@@ -268,6 +274,66 @@ export async function addInlineBlockFromCatalogue(
 	await property.locator('uui-button-group uui-button[look="placeholder"]').first().click();
 	await page.locator(`umb-block-catalogue-modal uui-card-block-type[name="${blockName}"]`).click();
 	await expect(page.locator('umb-block-catalogue-modal')).toHaveCount(0);
+	await expect(entries).toHaveCount(before + 1);
+	return entries.nth(before);
+}
+
+/**
+ * Clicks a block editor's create button (Single Block's "Add ...", the rich text editor's Insert Block) and resolves
+ * with the block workspace modal of the new block (its Content view). The button opens the block catalogue, where the
+ * card with the block's name is picked. With one allowed block type the rich text editor's Insert Block pushes the
+ * workspace's create route itself (Umbraco 17.6.2), and the catalogue opens the workspace on that route in some runs and
+ * not in others; the card links to the same route, so it is clicked whenever the workspace is not there yet. A click
+ * the workspace covers in the meantime is not needed.
+ */
+export async function createBlockInModal(page: Page, createButton: Locator, blockName: string): Promise<BlockModal> {
+	const editors = blockModalEditors(page);
+	const before = await editors.count();
+	const card = page.locator(`umb-block-catalogue-modal uui-card-block-type[name="${blockName}"]`);
+	await createButton.scrollIntoViewIfNeeded();
+	await createButton.click();
+	await expect(editors.nth(before).or(card).first()).toBeVisible();
+	if ((await editors.count()) === before) {
+		await card.click({ timeout: 5_000 }).catch(() => undefined);
+	}
+	await expect(editors).toHaveCount(before + 1);
+	const modal = new BlockModal(page, editors.nth(before));
+	await modal.expectViewShown('content');
+	return modal;
+}
+
+// ---- Clipboard -----------------------------------------------------------------------------------------------------
+
+/**
+ * Copies a block with its Copy to clipboard block action. Umbraco 17.6.2 keeps the clipboard in the browser's local
+ * storage, so each test starts with an empty one.
+ */
+export async function copyBlockToClipboard(entry: Locator): Promise<void> {
+	await entry.scrollIntoViewIfNeeded();
+	await entry.hover();
+	await entry.locator('uui-button[data-mark="block-action:Umb.BlockAction.CopyToClipboard"]').first().click();
+}
+
+/**
+ * Pastes a clipboard entry into a Block List property: its "Paste from clipboard" button opens the block catalogue on
+ * the Clipboard tab, where the entry (labelled "<document> - <property> - <block>") is picked and submitted. Resolves
+ * with the new entry.
+ */
+export async function pasteBlockFromClipboard(
+	page: Page,
+	blockPropertyAlias: string,
+	elementTypeAlias: string,
+	clipboardLabel: string,
+): Promise<Locator> {
+	const entries = blockEntries(page, blockPropertyAlias, elementTypeAlias);
+	const before = await entries.count();
+	const property = documentProperty(page, blockPropertyAlias);
+	await property.scrollIntoViewIfNeeded();
+	await property.locator('uui-button[label="Paste from clipboard"]').first().click();
+	const catalogue = page.locator('umb-block-catalogue-modal');
+	await catalogue.locator(`umb-clipboard-entry-picker uui-menu-item[label="${clipboardLabel}"]`).click();
+	await catalogue.locator('uui-button[label="Submit"]').click();
+	await expect(catalogue).toHaveCount(0);
 	await expect(entries).toHaveCount(before + 1);
 	return entries.nth(before);
 }

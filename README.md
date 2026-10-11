@@ -167,7 +167,7 @@ Rules keyed by an element type apply inside blocks, for the site of the document
 }
 ```
 
-Covered by the acceptance suite on Umbraco 17.6.2 and 17.7.0: Block List in a modal and inline, Block Grid in a modal, blocks inside blocks (two levels deep), blocks in a document that is not saved yet, and blocks in a culture-variant document in split view. Checked by hand on both versions: Single Block in a modal and inline, blocks in the rich text editor, and blocks pasted from the clipboard into another site's document (they follow the site they are pasted into).
+Covered by the acceptance suite on Umbraco 17.6.2 and 17.7.0: Block List in a modal and inline, Block Grid in a modal, blocks inside blocks (two levels deep), blocks in a document that is not saved yet, blocks in a culture-variant document in split view, Single Block in a modal and inline, blocks in the rich text editor, and blocks pasted from the clipboard into another site's document (they follow the site they are pasted into).
 
 Where it does not apply:
 

@@ -16,9 +16,10 @@ const CONSOLE_ERRORS_SPEC = /08-console-errors\.spec\.ts$/;
  * the whole run. Running a single spec also runs the teardown, whose first test then fails because the other specs did
  * not run; pass `--no-deps` to leave it out.
  *
- * The global setup and teardown protect the site's configuration files (support/site-config.ts): the setup undoes
- * what an interrupted run left behind and fails fast unless the package is enabled and no rules file exists; the
- * teardown restores appsettings.json and deletes the suite's rules file when a test did not.
+ * The global setup and teardown protect the site's configuration files (support/site-config.ts) and schema
+ * (support/schema-changes.ts): the setup undoes what an interrupted run left behind and fails fast unless the package
+ * is enabled and no rules file exists; the teardown restores appsettings.json, deletes the suite's rules file and
+ * removes the schema changes of specs 30 to 35 when a test did not.
  */
 export default defineConfig({
 	testDir: './tests',

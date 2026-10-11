@@ -1,7 +1,8 @@
-import type { Locator, Page } from '@playwright/test';
+import type { Locator } from '@playwright/test';
 import { HiddenFieldsRequestLog, settle } from '../support/backoffice.js';
 import {
 	blockEntry,
+	blockEventsSince,
 	expandInlineBlock,
 	openBlockModal,
 	openDocumentWithInlineBlocks,
@@ -12,16 +13,9 @@ import {
 import { SAMPLE } from '../support/env.js';
 import { expect, test } from '../support/fixtures.js';
 import { resolveSample } from '../support/management-api.js';
-import type { AppliedEvent } from '../support/applied.js';
 
 /** The seeded media item "Promo media" (media type blockMedia): an inline Block List (`blocks`) with one promoBanner. */
 const PROMO_MEDIA_KEY = '43aba5f8-52fa-40ea-b707-6dc1e9c5fee9';
-
-/** Block applied events recorded in the page at or after a browser wall-clock time. */
-async function blockEventsSince(page: Page, since: number): Promise<AppliedEvent[]> {
-	const events = await page.evaluate(() => (window as unknown as { __pvApplied?: AppliedEvent[] }).__pvApplied ?? []);
-	return events.filter((event) => event.at >= since && event.target !== 'document');
-}
 
 /**
  * The promoBanner of the media item, expanded in place: heading ("Media promo") and overlayColour both shown, because a
