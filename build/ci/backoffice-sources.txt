@@ -1,0 +1,22 @@
+# The backoffice sources the client relies on, compared between Umbraco versions by compare-backoffice-sources.sh (run
+# by compat.yml). One file per line: its path inside dist-cms of the @umbraco-cms/backoffice npm package, a "|", and
+# what the package relies on in it. Add a line when the client starts to rely on another part of the backoffice.
+
+packages/content/content-type/structure/content-type-structure-manager.class.js | removeContainer(contentTypeUnique, containerId, { preventRemovingProperties }), whenLoaded, contentTypes
+packages/core/property/property-guard-manager/property-guard.manager.js | the property view guard rules (addRules, removeRules)
+packages/core/property/property-guard-manager/variant-property-guard.manager.js | the variant property view guard of documents and block elements
+packages/core/workspace/entity-detail/entity-detail-workspace-base.js | unique, isNew, getParentUnique, _processIncomingData, the scaffold of a new entity
+packages/content/content/workspace/content-detail-workspace-base.js | structure, propertyViewGuard, resetState (clears the structure and the guard)
+packages/documents/documents/workspace/context/document-workspace.context.js | the document workspace the document context binds to
+packages/content/content/workspace/content-validation-to-hints.manager.js | the "Could not find the declared container" rejection the package marks as handled
+packages/content/content/global-components/content-workspace-property.element.js | a property the view guard denies renders no editor
+packages/block/block/workspace/block-workspace.context.js | the content and settings element managers, resetState
+packages/block/block/workspace/block-element-manager.js | contentTypeId, structure and propertyViewGuard of a block half
+packages/block/block/workspace/views/edit/block-workspace-view-edit-properties.element.js | a block property the view guard denies is not rendered
+packages/block/block-list/components/inline-list-block/inline-list-block.element.js | inline Block List editing; the known upstream rejection (KNOWN_UPSTREAM_ERRORS)
+packages/block/block-single/components/inline-single-block/inline-single-block.element.js | inline Single Block editing
+packages/block/block-grid/components/block-grid-block-inline/block-grid-block-inline.element.js | Block Grid inline editing renders the first property without the view guard (documented limitation)
+packages/core/auth/auth.context.js | configureClient and getLatestToken for the package's API client
+libs/context-api/provide/context-boundary.controller.js | the site boundary of media, member and blueprint workspaces
+libs/context-proxy/context-proxy.controller.js | the modal context proxy that forwards a block's request to its document
+packages/core/entity/contexts/parent/parent.entity-context.js | the parent of a document that is not saved yet
