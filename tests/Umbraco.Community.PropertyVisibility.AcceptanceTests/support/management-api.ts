@@ -2,6 +2,13 @@ import type { Page } from '@playwright/test';
 import { DIRECT_CALL_HEADER, HIDDEN_FIELDS_PATH, SAMPLE } from './env.js';
 
 /**
+ * Upper bound for one backofficeFetch call. Umbraco 17.6.2 on SQLite can leave a write request without an answer
+ * (docs/testing.md, "The test site on SQLite"); without a bound the test would only end at its own timeout, with
+ * nothing but a pending request in the trace.
+ */
+const BACKOFFICE_FETCH_TIMEOUT_MS = 30_000;
+
+/**
  * Calls the backoffice from inside an authenticated backoffice page, the way the backoffice itself does: same origin,
  * credentials included and the `Bearer [redacted]` placeholder, which Umbraco swaps for the HttpOnly access-token cookie.
  * The page must be on a /umbraco/ URL of a logged-in session. The call carries DIRECT_CALL_HEADER, so `settle()` does
@@ -12,8 +19,21 @@ export async function backofficeFetch<T = unknown>(
 	path: string,
 	init: { method?: string; body?: unknown } = {},
 ): Promise<{ status: number; body: T }> {
+	const method = init.method ?? 'GET';
+	try {
+		return await evaluateFetch<T>(page, path, method, init.body);
+	} catch (error) {
+		if (!String(error).includes('TimeoutError')) throw error;
+		throw new Error(
+			`${method} ${path} got no answer within ${BACKOFFICE_FETCH_TIMEOUT_MS / 1000} s. On SQLite, check the test site log for ` +
+				'"Cache instruction sync did not complete" and "The test site on SQLite" in docs/testing.md.',
+		);
+	}
+}
+
+function evaluateFetch<T>(page: Page, path: string, method: string, body: unknown): Promise<{ status: number; body: T }> {
 	return page.evaluate(
-		async ({ path, method, body, directCallHeader }) => {
+		async ({ path, method, body, directCallHeader, timeout }) => {
 			const response = await fetch(path, {
 				method,
 				credentials: 'include',
@@ -24,6 +44,7 @@ export async function backofficeFetch<T = unknown>(
 					...(body === undefined ? {} : { 'Content-Type': 'application/json' }),
 				},
 				body: body === undefined ? undefined : JSON.stringify(body),
+				signal: AbortSignal.timeout(timeout),
 			});
 			const text = await response.text();
 			let parsed: unknown = text;
@@ -34,7 +55,7 @@ export async function backofficeFetch<T = unknown>(
 			}
 			return { status: response.status, body: parsed as never };
 		},
-		{ path, method: init.method ?? 'GET', body: init.body, directCallHeader: DIRECT_CALL_HEADER },
+		{ path, method, body, directCallHeader: DIRECT_CALL_HEADER, timeout: BACKOFFICE_FETCH_TIMEOUT_MS },
 	);
 }
 
