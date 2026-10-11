@@ -244,14 +244,15 @@ Where it works (Umbraco 17.6.2 and 17.7.0):
 | Blocks with a hidden mandatory property that fails validation | Save and publish of the document | Acceptance spec `20` |
 | Blocks in a media item (nothing hidden, also when it is opened from a document) | inline, in the media workspace | Acceptance spec `21` |
 | Blocks in a culture-variant document, in split view | in a modal, opened from either culture | Acceptance spec `23` |
-| Single Block | in a modal, and inline | Manual run 2026-09-27 ([testing.md](testing.md#manual-acceptance-runs)) |
-| Blocks in the rich text editor (Tiptap) | in a modal | Manual run 2026-09-27 ([testing.md](testing.md#manual-acceptance-runs)) |
-| Blocks pasted from the clipboard into another site's document | in a modal | Manual run 2026-09-27 ([testing.md](testing.md#manual-acceptance-runs)) |
+| Single Block | in a modal, and inline | Acceptance spec `31` |
+| Blocks in the rich text editor (Tiptap) | in a modal | Acceptance spec `30` |
+| Blocks pasted from the clipboard into another site's document | in a modal | Acceptance spec `32` |
+| Blocks in a member opened from a document, and in a document blueprint (nothing hidden) | in a modal | Acceptance specs `33`, `34` |
 
 What it does not do:
 
-- Blocks edited outside a document (in media, members or document blueprints) get nothing hidden: there is no document to resolve a site from, and nothing is requested. That also holds when the media item or member is opened in a modal from inside a document (for example with "Open in Media Library" from a media picker): the package stops the block at the media, member or blueprint workspace (`Umbraco.Community.PropertyVisibility.WorkspaceContext.SiteBoundary`), so the block never takes the rules of the document it was opened from. Spec `21` covers a media item; members and document blueprints use the same boundary and are manual cases in [testing.md](testing.md#manual-acceptance-runs).
-- Block Grid inline editing (a block type with `inlineEditing` on): the property the grid renders inline, the element type's first property, is always shown, because Umbraco renders it without the property view guard. The block's modal still hides it, with everything else configured (checked on 17.6.2 and 17.7.0, see [testing.md](testing.md#manual-acceptance-runs)).
+- Blocks edited outside a document (in media, members or document blueprints) get nothing hidden: there is no document to resolve a site from, and nothing is requested. That also holds when the media item or member is opened in a modal from inside a document (for example with "Open in Media Library" from a media picker): the package stops the block at the media, member or blueprint workspace (`Umbraco.Community.PropertyVisibility.WorkspaceContext.SiteBoundary`), so the block never takes the rules of the document it was opened from. Spec `21` covers a media item, spec `33` a member opened from a document's member picker and spec `34` a document blueprint.
+- Block Grid inline editing (a block type with `inlineEditing` on): the property the grid renders inline, the element type's first property, is always shown, because Umbraco renders it without the property view guard. The block's modal still hides it, with everything else configured (acceptance spec `35`).
 - A block label whose template refers to a hidden property still shows its value. Hiding is a backoffice feature only: hidden values stay in the block data and are saved with the document.
 
 The [applied event](#integration-the-applied-event) reports each block half with `target` `block-content` or `block-settings`, the element type as `contentTypeKey` and the key of the document that holds the block as `documentKey`.

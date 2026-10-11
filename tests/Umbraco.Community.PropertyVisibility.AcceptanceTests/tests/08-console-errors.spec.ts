@@ -35,7 +35,7 @@ test.describe('No console errors', () => {
 		const ranFiles = new Set(lines.flatMap((line) => (line.kind === 'ran' ? [line.file] : [])));
 		// Every spec with a logged-in page; 09 only uses the anonymous request fixture, and the opt-in 99 measurement is
 		// skipped in a normal run.
-		for (const prefix of ['03-', '04-', '05-', '06-', '07-', '10-', '11-', '12-', '13-', '14-', '15-', '16-', '17-', '18-', '19-', '20-', '21-', '22-', '23-', '24-', '25-']) {
+		for (const prefix of ['03-', '04-', '05-', '06-', '07-', '10-', '11-', '12-', '13-', '14-', '15-', '16-', '17-', '18-', '19-', '20-', '21-', '22-', '23-', '24-', '25-', '30-', '31-', '32-', '33-', '34-', '35-']) {
 			expect([...ranFiles].some((file) => file.startsWith(prefix)), `a ${prefix}* spec ran in this run`).toBe(true);
 		}
 

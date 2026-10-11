@@ -23,7 +23,7 @@ export const APPSETTINGS_FILE = join(SITE_CONTENT_ROOT, 'appsettings.json');
  * State that must survive an interrupted run (gitignored). Not the output folder: Playwright empties that at the start
  * of a run.
  */
-const RUN_STATE_DIR = fileURLToPath(new URL('../.run-state/', import.meta.url));
+export const RUN_STATE_DIR = fileURLToPath(new URL('../.run-state/', import.meta.url));
 
 /** appsettings.json as it was when the run started (support/global-setup.ts). */
 const APPSETTINGS_BACKUP = join(RUN_STATE_DIR, 'appsettings.json.backup');

@@ -7,6 +7,44 @@ import {
 	propertyGroup,
 	propertySlot,
 } from './backoffice.js';
+import { ELEMENT_TYPES, waitForBlockApplied, type BlockModal } from './blocks.js';
+
+/**
+ * The block workspace modal of a promoBanner in a document under Corporate site (`corporate`: `overlayColour` hidden in
+ * the Content view, `anchorId` in the Settings view) or under Campaign site (`campaign`: both shown), next to `heading`
+ * and `cssClass`, which no rule hides. Waits for the applied event of each half dispatched
+ * at or after `since` (taken right before the block was opened or created). Leaves the Settings view active.
+ */
+export async function expectPromoBannerModal(
+	page: Page,
+	modal: BlockModal,
+	block: { documentKey: string; since: number },
+	site: 'corporate' | 'campaign',
+): Promise<void> {
+	const hidden = site === 'corporate';
+	const content = await waitForBlockApplied(page, {
+		documentKey: block.documentKey,
+		elementTypeKey: ELEMENT_TYPES.promoBanner.key,
+		target: 'block-content',
+		since: block.since,
+	});
+	expect(content.propertyCount, 'promoBanner properties hidden').toBe(hidden ? 1 : 0);
+	await modal.expectPropertyVisible('heading');
+	if (hidden) await modal.expectPropertyHidden('overlayColour');
+	else await modal.expectPropertyVisible('overlayColour');
+
+	await modal.openView('settings');
+	const settings = await waitForBlockApplied(page, {
+		documentKey: block.documentKey,
+		elementTypeKey: ELEMENT_TYPES.promoBannerSettings.key,
+		target: 'block-settings',
+		since: block.since,
+	});
+	expect(settings.propertyCount, 'promoBannerSettings properties hidden').toBe(hidden ? 1 : 0);
+	await modal.expectPropertyVisible('cssClass');
+	if (hidden) await modal.expectPropertyHidden('anchorId');
+	else await modal.expectPropertyVisible('anchorId');
+}
 
 /**
  * A `site` document, on any site. The `site` type and its `siteSettings` composition each have a tab named "Legacy
