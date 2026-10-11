@@ -66,6 +66,7 @@ The workflows (`ci.yml`, `compat.yml`, `release.yml`) only call the bash scripts
 | `start-test-site.sh`, `stop-test-site.sh` | Start the built test site in the background on a clean SQLite database (it deletes `umbraco/Data`) and wait for `/umbraco` to answer 200; stop it again. PID file and console log in `artifacts/test-site`; a stale PID file whose process is not the test site is removed, never signalled. |
 | `acceptance.sh` | `npm ci`, typecheck, `npx playwright install chromium` and the whole Playwright suite against `PV_BASE_URL`, bounded by `--global-timeout` (and `--max-failures` with `CI=true`); `playwright-report/` and `test-results/` stay in the acceptance project. |
 | `resolve-umbraco-version.sh` | Prints the latest stable, listed Umbraco 17.x from nuget.org's registration index, or checks a given version (needs `node`). |
+| `compare-backoffice-sources.sh` | Compares the backoffice sources the client relies on (`build/ci/backoffice-sources.txt`) between the last verified version (the highest in `Constants.TestedUmbracoVersions`, or the version given as argument) and `UMBRACO_CMS_VERSION`, from the `@umbraco-cms/backoffice` npm packages, reprinted without comments by the client's TypeScript (run `build.sh` first). Writes `summary.md`, `report.md` and `sources.diff` to `artifacts/backoffice-compare` (`PV_COMPARE_DIR`). |
 
 Environment: `PACKAGE_VERSION` (default `0.0.0-local`), `UMBRACO_CMS_VERSION` (build against one exact Umbraco version; the build fails when restore resolves another), `CI=true` (deterministic `ContinuousIntegrationBuild`, `playwright install --with-deps`, which uses sudo, and `--max-failures`), `PV_PORT` (test site https port, default 44300, http is the next port), `PV_GLOBAL_TIMEOUT_MS` (default 30 minutes) and `PV_MAX_FAILURES` (default 10) for `acceptance.sh`.
 
@@ -76,7 +77,8 @@ bash build/ci/start-test-site.sh && bash build/ci/acceptance.sh; bash build/ci/s
 # What compat.yml does, against the latest 17.x (the assignment first, so a failed lookup stops the chain)
 UMBRACO_CMS_VERSION=$(bash build/ci/resolve-umbraco-version.sh) && export UMBRACO_CMS_VERSION \
   && bash build/ci/build.sh && bash build/ci/client-typecheck.sh && bash build/ci/test.sh && bash build/ci/schema-check.sh \
-  && bash build/ci/start-test-site.sh && bash build/ci/acceptance.sh; bash build/ci/stop-test-site.sh
+  && bash build/ci/start-test-site.sh && bash build/ci/acceptance.sh; bash build/ci/stop-test-site.sh; \
+  bash build/ci/compare-backoffice-sources.sh
 ```
 
 The test site started by `start-test-site.sh` runs the Release build output with `ASPNETCORE_ENVIRONMENT=Development`. It uses the checkout's test site folder as its content root, the same as `dotnet run`: the same `umbraco/Data` database folder, and the same `appsettings.json` that specs `10` to `12` rewrite. Stop a test site you started with `dotnet run` first; `start-test-site.sh` refuses to delete a database another process on the same machine holds open (Linux, with `fuser`), and on Windows the delete fails on the locked file. `PV_PORT` only moves the port: a second site next to a running one needs its own checkout. `pack.sh` refuses to run with `UMBRACO_CMS_VERSION` set, because the package would then depend on that exact version; build again without it first.
@@ -95,6 +97,7 @@ The documentation is part of the change. What goes where:
 | A new limitation, or one that is lifted | [What it does not do](README.md#what-it-does-not-do) in the README, and the short list in `umbraco-marketplace-readme.md` |
 | An Umbraco version verified | `Constants.TestedUmbracoVersions`, [docs/compatibility.md](docs/compatibility.md) and the version table in the README |
 | An acceptance spec | The spec table in [docs/testing.md](docs/testing.md) |
+| The client relies on another part of the backoffice | `build/ci/backoffice-sources.txt`, so `compat.yml` compares it between Umbraco versions |
 
 `docs/README_nuget.md` (the NuGet readme), `umbraco-marketplace-readme.md` (the Marketplace listing) and `CHANGELOG.md` (the GitHub release notes) are shown outside this repository: use absolute URLs in them, and link images as `https://raw.githubusercontent.com/erwindamsma/Umbraco.Community.PropertyVisibility/main/...`. The README in the repository uses relative links. Screenshots live in `docs/screenshots` and are taken on the test site; keep their file names, because the Marketplace listing and the NuGet readme link to them. `docs/icon.png` is the package icon (128x128 PNG, packed into the nupkg). Its source is `docs/icon.svg`: after a change, render the SVG to a 128x128 PNG with a transparent background and without metadata chunks (for example a Chromium element screenshot with a transparent background), and check that the PNG holds only the `IHDR`, `IDAT` and `IEND` chunks.
 
