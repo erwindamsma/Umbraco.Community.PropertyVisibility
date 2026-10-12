@@ -870,7 +870,7 @@ public sealed class ConfigurationAnalyzerTests
 	}
 
 	[TestCase(17, 8, 0, IssueSeverity.Info)]
-	[TestCase(17, 7, 1, IssueSeverity.Info)]
+	[TestCase(17, 7, 2, IssueSeverity.Info)]
 	[TestCase(17, 6, 3, IssueSeverity.Info)]
 	[TestCase(18, 0, 0, IssueSeverity.Warning)]
 	[TestCase(16, 4, 0, IssueSeverity.Warning)]
@@ -885,13 +885,14 @@ public sealed class ConfigurationAnalyzerTests
 		{
 			Assert.That(issue.Severity, Is.EqualTo(expected));
 			Assert.That(issue.Message, Does.Contain($"Umbraco {major}.{minor}.{patch}"));
-			Assert.That(issue.Message, Does.Contain("17.6.2, 17.7.0"));
+			Assert.That(issue.Message, Does.Contain("17.6.2, 17.7.0, 17.7.1"));
 			Assert.That(analysis.Summary.IsTestedUmbracoVersion, Is.False);
 		});
 	}
 
 	[TestCase(17, 6, 2)]
 	[TestCase(17, 7, 0)]
+	[TestCase(17, 7, 1)]
 	public void A_tested_Umbraco_version_is_not_PV303(int major, int minor, int patch)
 	{
 		_site.UmbracoVersion = new Version(major, minor, patch);

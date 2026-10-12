@@ -40,7 +40,7 @@ dotnet add package Umbraco.Community.PropertyVisibility
 
 The package needs Umbraco 17.6.2 or a later 17.x on .NET 10 (see [Supported Umbraco versions](#supported-umbraco-versions)). It registers itself through a composer, so there is no startup code to add, and without rules it hides nothing. Build the site once after installing: the build copies the JSON schemas that give IntelliSense for the configuration.
 
-To try it on a new site, create that site from the 17.x templates (`dotnet new install Umbraco.Templates::17.7.0`). The current default templates create an Umbraco 18 site, where the install reports `NU1107` and the next restore fails; do not work around that error, because 1.x does not run on Umbraco 18.
+To try it on a new site, create that site from the 17.x templates (`dotnet new install Umbraco.Templates::17.7.1`). The current default templates create an Umbraco 18 site, where the install reports `NU1107` and the next restore fails; do not work around that error, because 1.x does not run on Umbraco 18.
 
 ## Quick start
 
@@ -167,7 +167,7 @@ Rules keyed by an element type apply inside blocks, for the site of the document
 }
 ```
 
-Covered by the acceptance suite on Umbraco 17.6.2 and 17.7.0: Block List in a modal and inline, Block Grid in a modal, blocks inside blocks (two levels deep), blocks in a document that is not saved yet, blocks in a culture-variant document in split view, Single Block in a modal and inline, blocks in the rich text editor, and blocks pasted from the clipboard into another site's document (they follow the site they are pasted into).
+Covered by the acceptance suite on Umbraco 17.6.2, 17.7.0 and 17.7.1: Block List in a modal and inline, Block Grid in a modal, blocks inside blocks (two levels deep), blocks in a document that is not saved yet, blocks in a culture-variant document in split view, Single Block in a modal and inline, blocks in the rich text editor, and blocks pasted from the clipboard into another site's document (they follow the site they are pasted into).
 
 Where it does not apply:
 
@@ -216,6 +216,7 @@ Up to Umbraco 13, fields were often hidden per site by a `SendingContentNotifica
 |---|---|
 | 17.6.2 | Verified, the lowest supported version |
 | 17.7.0 | Verified |
+| 17.7.1 | Verified |
 | 17.0 to 17.6.1 | Not supported: the package relies on backoffice APIs verified from 17.6.2 on |
 | 18 | Not supported yet, see [Upgrading to Umbraco 18](#upgrading-to-umbraco-18) |
 
@@ -250,7 +251,7 @@ The package depends on Umbraco `[17.6.2, 18.0.0)` and .NET 10. A later 17.x can 
 - Discussion [#20538](https://github.com/umbraco/Umbraco-CMS/discussions/20538): a tab whose properties are all hidden by a view guard stays visible in Umbraco. For its own rules the package removes such tabs and groups (`HideEmptiedContainers`).
 - Issue [#21253](https://github.com/umbraco/Umbraco-CMS/issues/21253): a guard rule added as soon as a workspace context appears can be missed. The package adds its rules after its own request returns, and the acceptance suite has not shown the problem.
 - Issue [#21254](https://github.com/umbraco/Umbraco-CMS/issues/21254): Umbraco's write guard (read-only properties) does not stop pickers and block editors. The package only uses view guards; a read-only mode would depend on this issue.
-- On Umbraco 17.6.2 and 17.7.0 an inline-edited Block List item that is re-rendered while it initializes throws "Context request was cancelled, host was disconnected" as an uncaught promise rejection in the browser console, most often after a click on the already selected Content tab while the page loads. It was reproduced on a stock 17.6.2 site without this package on 2026-09-25 (counts in [docs/testing.md](docs/testing.md#manual-acceptance-runs)); the same code is unchanged in 17.7.0.
+- On Umbraco 17.6.2 to 17.7.1 an inline-edited Block List item that is re-rendered while it initializes throws "Context request was cancelled, host was disconnected" as an uncaught promise rejection in the browser console, most often after a click on the already selected Content tab while the page loads. It was reproduced on a stock 17.6.2 site without this package on 2026-09-25 (counts in [docs/testing.md](docs/testing.md#manual-acceptance-runs)); the same code is unchanged in 17.7.0 and 17.7.1.
 
 ## Upgrading to Umbraco 18
 

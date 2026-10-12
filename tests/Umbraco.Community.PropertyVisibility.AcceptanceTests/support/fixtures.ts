@@ -42,7 +42,7 @@ export type ConsoleLogLine =
  */
 const KNOWN_UPSTREAM_ERRORS: ReadonlyArray<{ issue: string; pattern: RegExp }> = [
 	{
-		// Umbraco 17.6.2 and 17.7.0 (not fixed in 17.7.0; the issue id names the version it was first reproduced on):
+		// Umbraco 17.6.2 to 17.7.1 (not fixed in 17.7.1; the issue id names the version it was first reproduced on):
 		// umb-inline-list-block calls UmbBlockWorkspaceContext.load() without handling its rejection, and load() awaits
 		// the block entries context, which rejects when the inline block is detached (re-rendered) while it initializes.
 		// Trigger: a re-render of the tab view while the inline blocks load, as when a test clicks the already selected
