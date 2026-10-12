@@ -14,7 +14,8 @@ name: Compatibility
 
 on:
   schedule:
-    - cron: '0 6 * * 1'
+    # Off the hour: GitHub delays or drops scheduled runs most often at the start of an hour.
+    - cron: '23 4 * * 1'
   workflow_dispatch:
     inputs:
       umbraco-version:
