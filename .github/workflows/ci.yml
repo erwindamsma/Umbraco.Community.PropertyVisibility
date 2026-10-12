@@ -27,11 +27,21 @@ jobs:
     name: Build, test and pack
     runs-on: ubuntu-24.04
     timeout-minutes: 30
+    outputs:
+      docs-only: ${{ steps.changes.outputs.docs-only }}
     steps:
+      # Two commits deep: the merge commit of a pull request or the squash commit on main, and its first parent.
       - name: Checkout
         uses: actions/checkout@v7
         with:
           persist-credentials: false
+          fetch-depth: 2
+
+      # A change to only Markdown files or docs/ skips the acceptance job; a manual run always runs it.
+      - name: Documentation-only change
+        id: changes
+        if: github.event_name != 'workflow_dispatch'
+        run: bash build/ci/docs-only-change.sh
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v6
@@ -79,9 +89,11 @@ jobs:
           path: TestResults
           if-no-files-found: ignore
 
+  # Skipped for a documentation-only change; GitHub counts a skipped job as passed for the required check.
   acceptance:
     name: Acceptance tests (Playwright)
     needs: build-test-pack
+    if: needs.build-test-pack.outputs.docs-only != 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     env:

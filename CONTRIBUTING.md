@@ -57,6 +57,7 @@ The workflows (`ci.yml`, `compat.yml`, `release.yml`) only call the bash scripts
 
 | Script | What it does |
 |---|---|
+| `docs-only-change.sh` | Whether a change touches only Markdown files and `docs/`: `HEAD` against its first parent, or the commits given as arguments (`bash build/ci/docs-only-change.sh origin/main`). Prints the changed files and `docs-only=true` or `false`, which `ci.yml` uses to skip the acceptance job. When the commits cannot be compared, or nothing changed, the answer is `false`. |
 | `build.sh` | Client `npm ci`, `npm run typecheck` and `npm run build` with `PACKAGE_VERSION`, then `dotnet restore` and `dotnet build -c Release -p:SkipClientBuild=true`. Fails unless every `Umbraco.Cms*` package of the package, test site, unit test and schema generator projects (and the test site's `deps.json`) resolves to one version: `UMBRACO_CMS_VERSION` when set. |
 | `test.sh` | Unit tests (`dotnet test --no-build`, results in `TestResults/`). |
 | `schema-check.sh` | JSON schema drift check (`--check`). |
