@@ -29,7 +29,7 @@ internal static class Constants
 	/// <summary>
 	///     Umbraco versions the package's acceptance checklist has been run against.
 	/// </summary>
-	public static readonly IReadOnlyList<Version> TestedUmbracoVersions = [new Version(17, 6, 2), new Version(17, 7, 0)];
+	public static readonly IReadOnlyList<Version> TestedUmbracoVersions = [new Version(17, 6, 2), new Version(17, 7, 0), new Version(17, 7, 1)];
 
 	/// <summary>
 	///     The compatibility notes: which Umbraco versions were verified, and what to do on another one.

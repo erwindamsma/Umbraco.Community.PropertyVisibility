@@ -233,7 +233,7 @@ Rules keyed by an element type alias apply inside blocks, exactly like rules for
 - A block has two halves, and each follows the rules of its own element type: the Content view uses the block's content element type (`promoBanner` above), the Settings view its settings element type (`promoBannerSettings`). A block type without a settings element type has no Settings half and requests nothing for it.
 - Each element type is requested once per document: the Content and Settings halves, every inline block and every nested block of the same type share the response, and closing and reopening a block's modal applies the rules again without a new request. A change to the rules therefore reaches blocks when the document is opened again, as for the document itself.
 
-Where it works (Umbraco 17.6.2 and 17.7.0):
+Where it works (Umbraco 17.6.2, 17.7.0 and 17.7.1):
 
 | Block editor | Editing | Covered by |
 |---|---|---|

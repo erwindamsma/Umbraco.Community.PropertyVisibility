@@ -7,7 +7,7 @@ import { knownUpstreamIssue, test } from '../support/fixtures.js';
 import { resolveSample } from '../support/management-api.js';
 
 /**
- * Opt-in measurement, not a pass/fail check: how often the known Umbraco inline-block error of 17.6.2 and 17.7.0
+ * Opt-in measurement, not a pass/fail check: how often the known Umbraco inline-block error of 17.6.2 to 17.7.1
  * (support/fixtures.ts, KNOWN_UPSTREAM_ERRORS) appears when a landing page with inline-edited blocks is opened. Run it
  * with PV_MEASURE=1
  * (optionally PV_MEASURE_RUNS, default 45 per document, and PV_MEASURE_MODE):

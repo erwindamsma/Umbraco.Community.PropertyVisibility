@@ -38,7 +38,7 @@ Add this section to `appsettings.json`, next to the existing `Umbraco` section, 
 
 Keys are content type aliases, `Properties` are property aliases, `Containers` are tab and group aliases (`tab`, `tab/group` or a group outside a tab). The backoffice does not show tab and group aliases: Umbraco derives them from the name in camelCase ("Seo tab" becomes `seoTab`), and the tab's URL segment (`seo-tab`) is not the alias. An alias that does not exist hides nothing; the health check reports it (`PV104` for a content type) and, for a tab or group, lists the type's `tab` and `tab/group` aliases (`PV202`).
 
-Requires Umbraco 17.6.2 or a later 17.x. For a trial site, use the 17.x templates (`dotnet new install Umbraco.Templates::17.7.0`): on an Umbraco 18 site the install reports `NU1107`, which should not be worked around.
+Requires Umbraco 17.6.2 or a later 17.x. For a trial site, use the 17.x templates (`dotnet new install Umbraco.Templates::17.7.1`): on an Umbraco 18 site the install reports `NU1107`, which should not be worked around.
 
 ## Configuration
 
