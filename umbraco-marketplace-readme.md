@@ -38,7 +38,7 @@ Add this section to `appsettings.json`, next to the existing `Umbraco` section, 
 
 Keys are content type aliases, `Properties` are property aliases, `Containers` are tab and group aliases (`tab`, `tab/group` or a group outside a tab). The backoffice does not show tab and group aliases: Umbraco derives them from the name in camelCase ("Seo tab" becomes `seoTab`), and the tab's URL segment (`seo-tab`) is not the alias. An alias that does not exist hides nothing; the health check reports it (`PV104` for a content type) and, for a tab or group, lists the type's `tab` and `tab/group` aliases (`PV202`).
 
-Requires Umbraco 17.6.2 or a later 17.x. For a trial site, use the 17.x templates (`dotnet new install Umbraco.Templates::17.7.1`): on an Umbraco 18 site the install reports `NU1107`, which should not be worked around.
+1.x runs on Umbraco 17 (from 17.6.2), 2.x on Umbraco 18 (from 18.2.1). The command adds the latest version; on an Umbraco 17 site, add `--version` with the latest 1.x. A version for the other Umbraco major fails the restore (`NU1107`), which should not be worked around.
 
 ## Configuration
 
@@ -49,7 +49,7 @@ Per-site rules, the rules file, matching order, blocks, every option and every i
 - It is not authorization: hidden values are still saved, readable and writable through the Management API, returned by the Delivery API and rendered on the website. Use Umbraco's user group permissions to restrict access.
 - Hidden mandatory properties still block publishing, without a hint on the hidden field (the health check warns).
 - No rules per user group, per culture, or for media and member types; blocks outside documents get nothing hidden.
-- Umbraco 17 only for now; Umbraco 18 support is planned as 2.0.
+- Umbraco 17 (1.x) and 18 (2.x) only.
 
 The complete list is in the [README](https://github.com/erwindamsma/Umbraco.Community.PropertyVisibility#what-it-does-not-do).
 

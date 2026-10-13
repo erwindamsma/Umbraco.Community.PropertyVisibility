@@ -14,7 +14,7 @@ It changes what editors see, not what they are allowed to do: hidden values are 
 dotnet add package Umbraco.Community.PropertyVisibility
 ```
 
-Umbraco 17.6.2 or a later 17.x, .NET 10. No startup code is needed. For a trial site, use the 17.x templates (`dotnet new install Umbraco.Templates::17.7.1`): on an Umbraco 18 site the install reports `NU1107`, which should not be worked around.
+1.x runs on Umbraco 17 (from 17.6.2), 2.x on Umbraco 18 (from 18.2.1), both on .NET 10. The command adds the latest version; on an Umbraco 17 site, add `--version` with the latest 1.x. A version for the other Umbraco major fails the restore (`NU1107`), which should not be worked around. No startup code is needed.
 
 ## Single site
 

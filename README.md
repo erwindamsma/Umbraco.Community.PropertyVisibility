@@ -38,9 +38,9 @@ _The health check reports rules that do not resolve, with an issue code and a su
 dotnet add package Umbraco.Community.PropertyVisibility
 ```
 
-The package needs Umbraco 17.6.2 or a later 17.x on .NET 10 (see [Supported Umbraco versions](#supported-umbraco-versions)). It registers itself through a composer, so there is no startup code to add, and without rules it hides nothing. Build the site once after installing: the build copies the JSON schemas that give IntelliSense for the configuration.
+The package major follows the site's Umbraco major, both on .NET 10: **1.x for Umbraco 17** (from 17.6.2) and **2.x for Umbraco 18** (from 18.2.1), see [Supported Umbraco versions](#supported-umbraco-versions). The command above adds the latest version, which is 2.x; on an Umbraco 17 site, add `--version` with the latest 1.x from the [version history on NuGet](https://www.nuget.org/packages/Umbraco.Community.PropertyVisibility#versions-body-tab). A version for the other Umbraco major fails the restore with `NU1107`; do not work around that error, because 1.x does not run on Umbraco 18 and 2.x does not run on Umbraco 17.
 
-To try it on a new site, create that site from the 17.x templates (`dotnet new install Umbraco.Templates::17.7.1`). The current default templates create an Umbraco 18 site, where the install reports `NU1107` and the next restore fails; do not work around that error, because 1.x does not run on Umbraco 18.
+It registers itself through a composer, so there is no startup code to add, and without rules it hides nothing. Build the site once after installing: the build copies the JSON schemas that give IntelliSense for the configuration.
 
 ## Quick start
 
@@ -167,7 +167,7 @@ Rules keyed by an element type apply inside blocks, for the site of the document
 }
 ```
 
-Covered by the acceptance suite on Umbraco 17.6.2, 17.7.0 and 17.7.1: Block List in a modal and inline, Block Grid in a modal, blocks inside blocks (two levels deep), blocks in a document that is not saved yet, blocks in a culture-variant document in split view, Single Block in a modal and inline, blocks in the rich text editor, and blocks pasted from the clipboard into another site's document (they follow the site they are pasted into).
+Covered by the acceptance suite on Umbraco 17.6.2, 17.7.0, 17.7.1 and 18.2.1: Block List in a modal and inline, Block Grid in a modal, blocks inside blocks (two levels deep), blocks in a document that is not saved yet, blocks in a culture-variant document in split view, Single Block in a modal and inline, blocks in the rich text editor, and blocks pasted from the clipboard into another site's document (they follow the site they are pasted into).
 
 Where it does not apply:
 
@@ -212,15 +212,16 @@ Up to Umbraco 13, fields were often hidden per site by a `SendingContentNotifica
 
 ## Supported Umbraco versions
 
-| Umbraco | Status |
-|---|---|
-| 17.6.2 | Verified, the lowest supported version |
-| 17.7.0 | Verified |
-| 17.7.1 | Verified |
-| 17.0 to 17.6.1 | Not supported: the package relies on backoffice APIs verified from 17.6.2 on |
-| 18 | Not supported yet, see [Upgrading to Umbraco 18](#upgrading-to-umbraco-18) |
+| Umbraco | Package | Status |
+|---|---|---|
+| 17.6.2 | 1.x | Verified, the lowest supported 17.x |
+| 17.7.0 | 1.x | Verified |
+| 17.7.1 | 1.x | Verified |
+| 17.0 to 17.6.1 | | Not supported: the package relies on backoffice APIs verified from 17.6.2 on |
+| 18.2.1 | 2.x | Verified, the lowest supported 18.x |
+| 18.0 to 18.2.0 | | Not supported: not verified |
 
-The package depends on Umbraco `[17.6.2, 18.0.0)` and .NET 10. A later 17.x can be installed; until it is verified here, the health check reports it as `PV303` (Info). What each verification covered: [docs/compatibility.md](docs/compatibility.md).
+1.x depends on Umbraco `[17.6.2, 18.0.0)`, 2.x on `[18.2.1, 19.0.0)`, both on .NET 10. A later version of the same Umbraco major can be installed; until it is verified here, the health check reports it as `PV303` (Info). What each verification covered: [docs/compatibility.md](docs/compatibility.md).
 
 ## What it does not do
 
@@ -243,7 +244,7 @@ The package depends on Umbraco `[17.6.2, 18.0.0)` and .NET 10. A later 17.x can 
 - **Name matching on culture-variant roots uses the default-culture name as of the last save.** Use `RootNodeKey` where you can.
 - **No per-site rules in the recycle bin.** A trashed document matches no site, not even the default one; only the top-level `ContentTypes` apply until it is restored.
 - **Errors never hide more.** Rules that cannot be read or fail validation (`PV008`), a failed request or an unknown content type hide nothing; a broken edit of the rules file keeps the last valid version. When the package's request fails, the backoffice shows one Property Visibility warning until the page is reloaded, instead of Umbraco's generic error notification on every document.
-- **Umbraco 17 only**, from 17.6.2.
+- **Umbraco 17 and 18 only**: 1.x from 17.6.2, 2.x from 18.2.1.
 
 ## Known upstream issues
 
@@ -251,18 +252,21 @@ The package depends on Umbraco `[17.6.2, 18.0.0)` and .NET 10. A later 17.x can 
 - Discussion [#20538](https://github.com/umbraco/Umbraco-CMS/discussions/20538): a tab whose properties are all hidden by a view guard stays visible in Umbraco. For its own rules the package removes such tabs and groups (`HideEmptiedContainers`).
 - Issue [#21253](https://github.com/umbraco/Umbraco-CMS/issues/21253): a guard rule added as soon as a workspace context appears can be missed. The package adds its rules after its own request returns, and the acceptance suite has not shown the problem.
 - Issue [#21254](https://github.com/umbraco/Umbraco-CMS/issues/21254): Umbraco's write guard (read-only properties) does not stop pickers and block editors. The package only uses view guards; a read-only mode would depend on this issue.
-- On Umbraco 17.6.2 to 17.7.1 an inline-edited Block List item that is re-rendered while it initializes throws "Context request was cancelled, host was disconnected" as an uncaught promise rejection in the browser console, most often after a click on the already selected Content tab while the page loads. It was reproduced on a stock 17.6.2 site without this package on 2026-09-25 (counts in [docs/testing.md](docs/testing.md#manual-acceptance-runs)); the same code is unchanged in 17.7.0 and 17.7.1.
+- On Umbraco 17.6.2 to 17.7.1 and 18.2.1 an inline-edited Block List item that is re-rendered while it initializes throws "Context request was cancelled, host was disconnected" as an uncaught promise rejection in the browser console, most often after a click on the already selected Content tab while the page loads. It was reproduced on a stock 17.6.2 site without this package on 2026-09-25 (counts in [docs/testing.md](docs/testing.md#manual-acceptance-runs)); the same code is unchanged in 17.7.0, 17.7.1 and 18.2.1.
 
 ## Upgrading to Umbraco 18
 
-Not yet. 1.x supports Umbraco 17 only and declares `[17.6.2, 18.0.0)`. Umbraco 18 support is planned as a 2.0 release, because Umbraco 18 changes backoffice and API registration details that 1.x relies on. To move a site to Umbraco 18 before 2.0 exists, remove the package first. It stores nothing in the database, so removing it only makes the hidden fields visible again; keep the `PropertyVisibility` section or the rules file for later.
+Update the package to 2.x in the same step as Umbraco: 1.x does not run on Umbraco 18, and 2.x does not run on Umbraco 17. 2.x reads the same configuration, so the `PropertyVisibility` section and the rules file stay as they are, and the hidden-fields API is unchanged. Two things differ:
+
+- The package's OpenAPI document moves from `/umbraco/swagger/property-visibility/swagger.json` to `/umbraco/openapi/property-visibility.json`, because Umbraco 18 serves OpenAPI documents through Microsoft.AspNetCore.OpenApi instead of Swashbuckle.
+- The public classes `PropertyVisibilitySwaggerGenOptionsSetup` and `PropertyVisibilitySecurityFilter` are gone. They registered that document on Umbraco 17; a site never had to reference them.
 
 ## Support and maintenance
 
 Property Visibility is an actively maintained community package.
 
-- 1.x follows Umbraco 17, a long-term support release. A new 17.x minor is listed under [Supported Umbraco versions](#supported-umbraco-versions) once it has passed the checks in [docs/compatibility.md](docs/compatibility.md); `compat.yml` runs the automated part against the latest 17.x every week.
-- Umbraco 18 support is planned as 2.0, without a date (see [Upgrading to Umbraco 18](#upgrading-to-umbraco-18)).
+- 1.x follows Umbraco 17, a long-term support release, and 2.x follows Umbraco 18. Both are built from the same source, so a fix or a feature ships in both.
+- A new 17.x or 18.x version is listed under [Supported Umbraco versions](#supported-umbraco-versions) once it has passed the checks in [docs/compatibility.md](docs/compatibility.md); `compat.yml` runs the automated part against the latest 17.x and 18.x every week.
 - Bugs and questions go in [GitHub issues](https://github.com/erwindamsma/Umbraco.Community.PropertyVisibility/issues). Report security issues privately, see [SECURITY.md](SECURITY.md).
 
 ## Alternatives
