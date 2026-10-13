@@ -6,9 +6,10 @@
 # Usage: bash tools/inspect-nupkg.sh <folder with *.nupkg> <expected version> [<package project folder>] [<Umbraco range>]
 #   The package project folder (default src/Umbraco.Community.PropertyVisibility) holds the committed JSON schemas,
 #   which the packed copies must equal byte for byte.
-#   The Umbraco range (default: UmbracoCmsVersion in the Directory.Packages.props next to that folder, for example
-#   [17.6.2, 18.0.0)) is the version every Umbraco dependency of the nuspec must declare, so a package restored against
-#   one exact Umbraco version (-p:UmbracoCmsVersion=[17.7.0]) never passes.
+#   The Umbraco range (default: the UmbracoCmsVersion of Umbraco $UMBRACO_MAJOR, default 17, in the
+#   Directory.Packages.props next to that folder, for example [17.6.2, 18.0.0)) is the version every Umbraco dependency
+#   of the nuspec must declare, so a package restored against one exact Umbraco version (-p:UmbracoCmsVersion=[17.7.0])
+#   never passes. build/ci/pack.sh passes the range of its own build.
 set -euo pipefail
 
 if [ $# -lt 2 ]; then
@@ -33,9 +34,11 @@ if [ $# -ge 4 ]; then
   umbraco_range=$4
 else
   packages_props=$(dirname "$project_dir")/Directory.Packages.props
+  umbraco_major=${UMBRACO_MAJOR:-17}
   [ -f "$packages_props" ] || fail "$packages_props not found to read UmbracoCmsVersion from; pass the Umbraco range as the fourth argument"
-  umbraco_range=$(sed -n 's:.*<UmbracoCmsVersion[^>]*>\(.*\)</UmbracoCmsVersion>.*:\1:p' "$packages_props" | head -n 1)
-  [ -n "$umbraco_range" ] || fail "no UmbracoCmsVersion in $packages_props"
+  umbraco_range=$(grep -F "'\$(UmbracoMajor)' == '$umbraco_major'" "$packages_props" \
+    | sed -n 's:.*<UmbracoCmsVersion[^>]*>\(.*\)</UmbracoCmsVersion>.*:\1:p' | head -n 1)
+  [ -n "$umbraco_range" ] || fail "no UmbracoCmsVersion for Umbraco $umbraco_major in $packages_props"
 fi
 
 shopt -s nullglob

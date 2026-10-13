@@ -1,6 +1,8 @@
 name: CI
 
 # Every step calls a script in build/ci, so a local run executes the same commands (CONTRIBUTING.md, "Run CI locally").
+# Both jobs run once per Umbraco major: the same source builds package 1.x for Umbraco 17 and 2.x for Umbraco 18
+# (UMBRACO_MAJOR, src/Directory.Build.props).
 
 on:
   push:
@@ -24,9 +26,16 @@ env:
 
 jobs:
   build-test-pack:
-    name: Build, test and pack
+    name: Build, test and pack (Umbraco ${{ matrix.umbraco-major }})
     runs-on: ubuntu-24.04
     timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        umbraco-major: [17, 18]
+    env:
+      UMBRACO_MAJOR: ${{ matrix.umbraco-major }}
+    # The same value from every leg of the matrix: it depends on the changed files only.
     outputs:
       docs-only: ${{ steps.changes.outputs.docs-only }}
     steps:
@@ -77,7 +86,7 @@ jobs:
       - name: Upload package
         uses: actions/upload-artifact@v7
         with:
-          name: nupkg
+          name: nupkg-umbraco-${{ matrix.umbraco-major }}
           path: artifacts/nupkg/*.nupkg
           if-no-files-found: error
 
@@ -85,19 +94,24 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v7
         with:
-          name: unit-test-results
+          name: unit-test-results-umbraco-${{ matrix.umbraco-major }}
           path: TestResults
           if-no-files-found: ignore
 
-  # Skipped for a documentation-only change; GitHub counts a skipped job as passed for the required check.
+  # Skipped for a documentation-only change (the required check is the gate job "Acceptance tests (Playwright)" below).
   acceptance:
-    name: Acceptance tests (Playwright)
+    name: Acceptance tests (Playwright, Umbraco ${{ matrix.umbraco-major }})
     needs: build-test-pack
     if: needs.build-test-pack.outputs.docs-only != 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        umbraco-major: [17, 18]
     env:
       PV_PORT: 44300
+      UMBRACO_MAJOR: ${{ matrix.umbraco-major }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -136,7 +150,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: playwright-report
+          name: playwright-report-umbraco-${{ matrix.umbraco-major }}
           path: tests/Umbraco.Community.PropertyVisibility.AcceptanceTests/playwright-report
           if-no-files-found: ignore
 
@@ -144,7 +158,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: playwright-test-results
+          name: playwright-test-results-umbraco-${{ matrix.umbraco-major }}
           path: tests/Umbraco.Community.PropertyVisibility.AcceptanceTests/test-results
           if-no-files-found: ignore
 
@@ -152,8 +166,42 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: test-site-logs
+          name: test-site-logs-umbraco-${{ matrix.umbraco-major }}
           path: |
             src/Umbraco.Community.PropertyVisibility.TestSite/umbraco/Logs
             artifacts/test-site/test-site.log
           if-no-files-found: ignore
+
+  # The checks the main ruleset requires: one per stage, for both Umbraco majors. They always run, because a matrix job
+  # that is skipped never reports its expanded names ("..., Umbraco 17"), so a required check on such a name would wait
+  # forever on a documentation-only change.
+  build-test-pack-result:
+    name: Build, test and pack
+    needs: build-test-pack
+    if: always()
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Umbraco 17 and 18
+        env:
+          RESULT: ${{ needs.build-test-pack.result }}
+        run: |
+          echo "Build, test and pack for Umbraco 17 and 18: $RESULT"
+          [ "$RESULT" = success ]
+
+  acceptance-result:
+    name: Acceptance tests (Playwright)
+    needs: [build-test-pack, acceptance]
+    if: always()
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Umbraco 17 and 18
+        env:
+          RESULT: ${{ needs.acceptance.result }}
+          DOCS_ONLY: ${{ needs.build-test-pack.outputs.docs-only }}
+        run: |
+          echo "Acceptance tests for Umbraco 17 and 18: $RESULT (documentation-only change: ${DOCS_ONLY:-false})"
+          # Skipped is a pass only for a documentation-only change; it is also the result when the build failed.
+          if [ "$RESULT" = skipped ] && [ "$DOCS_ONLY" = true ]; then exit 0; fi
+          [ "$RESULT" = success ]

@@ -7,8 +7,11 @@
 # Environment (all optional):
 #   PACKAGE_VERSION               version of this build: the client manifest (umbraco-package.json), the assemblies and the
 #                                 nupkg; default 0.0.0-local (CI: 0.0.0-ci.<run number>, release: the tag)
+#   UMBRACO_MAJOR                 the Umbraco major to build for, passed as -p:UmbracoMajor: 17 (package 1.x) or 18
+#                                 (package 2.x). Without it, UMBRACO_CMS_VERSION or a release PACKAGE_VERSION (1.x: 17,
+#                                 2.x: 18) selects the major, otherwise 17 (src/Directory.Build.props)
 #   UMBRACO_CMS_VERSION           an exact Umbraco.Cms version to build against (for example 17.7.0), passed as
-#                                 -p:UmbracoCmsVersion=[<version>]; default: the range in src/Directory.Packages.props
+#                                 -p:UmbracoCmsVersion=[<version>]; default: the major's range in src/Directory.Packages.props
 #   CONTINUOUS_INTEGRATION_BUILD  true for a deterministic build (-p:ContinuousIntegrationBuild=true: source paths mapped
 #                                 to /_/); defaults to $CI, which GitHub Actions sets to true
 #   CONFIGURATION                 default Release
@@ -33,6 +36,7 @@ TARGET_FRAMEWORK=net10.0
 
 CONFIGURATION=${CONFIGURATION:-Release}
 export PACKAGE_VERSION=${PACKAGE_VERSION:-0.0.0-local}
+UMBRACO_MAJOR=${UMBRACO_MAJOR:-}
 UMBRACO_CMS_VERSION=${UMBRACO_CMS_VERSION:-}
 
 export DOTNET_NOLOGO=${DOTNET_NOLOGO:-true}
@@ -95,6 +99,19 @@ if [ -n "$UMBRACO_CMS_VERSION" ]; then
 	# An exact NuGet range: restore takes this version or fails, it never floats to another one.
 	msbuild_properties+=("-p:UmbracoCmsVersion=[$UMBRACO_CMS_VERSION]")
 fi
+if [ -n "$UMBRACO_MAJOR" ]; then
+	[[ $UMBRACO_MAJOR =~ ^[0-9]+$ ]] || fail "UMBRACO_MAJOR must be a major version such as 18, got '$UMBRACO_MAJOR'"
+	if [ -n "$UMBRACO_CMS_VERSION" ] && [ "${UMBRACO_CMS_VERSION%%.*}" != "$UMBRACO_MAJOR" ]; then
+		fail "UMBRACO_CMS_VERSION $UMBRACO_CMS_VERSION is not an Umbraco $UMBRACO_MAJOR version (UMBRACO_MAJOR)"
+	fi
+	msbuild_properties+=("-p:UmbracoMajor=$UMBRACO_MAJOR")
+fi
+
+# The value of one MSBuild property of the package project, evaluated with this build's global properties: for
+# example UmbracoMajor, or UmbracoCmsVersion (the range the package declares).
+package_property() {
+	dotnet msbuild "$PACKAGE_PROJECT" "${msbuild_properties[@]}" -getProperty:"$1" | tr -d '\r'
+}
 
 # Every Umbraco.Cms and Umbraco.Cms.* package a restored project resolved (from its obj/project.assets.json), one
 # "<id> <version>" line each, sorted; nothing when the project is not restored.
