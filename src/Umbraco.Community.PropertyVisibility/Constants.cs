@@ -12,7 +12,8 @@ internal static class Constants
 {
 	/// <summary>
 	///     Name of the package's own OpenAPI document and the value of its <c>MapToApi</c> attribute.
-	///     The document is served at <c>/umbraco/swagger/property-visibility/swagger.json</c>.
+	///     The document is served at <c>/umbraco/swagger/property-visibility/swagger.json</c> (Umbraco 17) or
+	///     <c>/umbraco/openapi/property-visibility.json</c> (Umbraco 18).
 	/// </summary>
 	public const string ApiName = "property-visibility";
 
@@ -21,8 +22,19 @@ internal static class Constants
 	/// </summary>
 	public const string PluginFolder = "UmbracoCommunityPropertyVisibility";
 
+#if UMBRACO_18
 	/// <summary>
-	///     The Umbraco major version this package is built and tested against.
+	///     The Umbraco major version this package is built and tested against (package 2.x).
+	/// </summary>
+	public const int SupportedUmbracoMajor = 18;
+
+	/// <summary>
+	///     Umbraco versions the package's acceptance checklist has been run against.
+	/// </summary>
+	public static readonly IReadOnlyList<Version> TestedUmbracoVersions = [new Version(18, 2, 1)];
+#else
+	/// <summary>
+	///     The Umbraco major version this package is built and tested against (package 1.x).
 	/// </summary>
 	public const int SupportedUmbracoMajor = 17;
 
@@ -30,6 +42,7 @@ internal static class Constants
 	///     Umbraco versions the package's acceptance checklist has been run against.
 	/// </summary>
 	public static readonly IReadOnlyList<Version> TestedUmbracoVersions = [new Version(17, 6, 2), new Version(17, 7, 0), new Version(17, 7, 1)];
+#endif
 
 	/// <summary>
 	///     The compatibility notes: which Umbraco versions were verified, and what to do on another one.

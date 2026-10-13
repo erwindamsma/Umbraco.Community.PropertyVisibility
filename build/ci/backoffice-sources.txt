@@ -5,7 +5,7 @@
 packages/content/content-type/structure/content-type-structure-manager.class.js | removeContainer(contentTypeUnique, containerId, { preventRemovingProperties }), whenLoaded, contentTypes
 packages/core/property/property-guard-manager/property-guard.manager.js | the property view guard rules (addRules, removeRules)
 packages/core/property/property-guard-manager/variant-property-guard.manager.js | the variant property view guard of documents and block elements
-packages/core/workspace/entity-detail/entity-detail-workspace-base.js | unique, isNew, getParentUnique, _processIncomingData, the scaffold of a new entity
+packages/core/workspace/entity-detail/entity-detail-workspace-base.js | unique, isNew, getParentUnique (17), _internal_getCreateUnderParent, _processIncomingData, the scaffold of a new entity
 packages/content/content/workspace/content-detail-workspace-base.js | structure, propertyViewGuard, resetState (clears the structure and the guard)
 packages/documents/documents/workspace/context/document-workspace.context.js | the document workspace the document context binds to
 packages/content/content/workspace/content-validation-to-hints.manager.js | the "Could not find the declared container" rejection the package marks as handled

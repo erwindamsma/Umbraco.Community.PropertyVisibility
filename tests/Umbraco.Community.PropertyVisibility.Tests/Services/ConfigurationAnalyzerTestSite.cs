@@ -71,7 +71,7 @@ internal sealed class ConfigurationAnalyzerTestSite
 
 		Options = Sample();
 		State = new ConfigurationState(ConfigurationSource.Appsettings, FilePath, LoadedAt, SampleRulesHash, []);
-		UmbracoVersion = new Version(17, 6, 2);
+		UmbracoVersion = Constants.TestedUmbracoVersions[0];
 
 		_monitor.SetupGet(monitor => monitor.CurrentValue).Returns(() =>
 		{
@@ -120,7 +120,7 @@ internal sealed class ConfigurationAnalyzerTestSite
 	/// <summary>What <see cref="IConfigurationInfo.Current" /> returns.</summary>
 	public ConfigurationState State { get; set; }
 
-	/// <summary>The running Umbraco version.</summary>
+	/// <summary>The running Umbraco version; a tested one of the build's Umbraco major unless a test changes it.</summary>
 	public Version UmbracoVersion { get; set; }
 
 	/// <summary>The order in which the options and the configuration info were read.</summary>

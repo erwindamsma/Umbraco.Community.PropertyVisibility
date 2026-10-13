@@ -3,10 +3,12 @@
 	<PropertyGroup>
 		<ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
 		<!--
-			The supported Umbraco range. Override for a one-off build against one exact version: dotnet build "-p:UmbracoCmsVersion=[17.7.0]"
-			(a bare 17.7.0 is a minimum: NuGet picks the lowest published version at or above it).
+			The supported Umbraco range of each Umbraco major (UmbracoMajor, src/Directory.Build.props). Override for a one-off
+			build against one exact version: dotnet build "-p:UmbracoCmsVersion=[17.7.0]", which also selects its major (a bare
+			17.7.0 is a minimum: NuGet picks the lowest published version at or above it).
 		-->
-		<UmbracoCmsVersion Condition="'$(UmbracoCmsVersion)' == ''">[17.6.2, 18.0.0)</UmbracoCmsVersion>
+		<UmbracoCmsVersion Condition="'$(UmbracoCmsVersion)' == '' AND '$(UmbracoMajor)' == '17'">[17.6.2, 18.0.0)</UmbracoCmsVersion>
+		<UmbracoCmsVersion Condition="'$(UmbracoCmsVersion)' == '' AND '$(UmbracoMajor)' == '18'">[18.2.1, 19.0.0)</UmbracoCmsVersion>
 	</PropertyGroup>
 
 	<ItemGroup Label="Umbraco">
@@ -18,7 +20,9 @@
 	</ItemGroup>
 
 	<ItemGroup Label="Test site">
-		<PackageVersion Include="uSync" Version="17.4.3" />
+		<!-- uSync majors follow Umbraco majors -->
+		<PackageVersion Include="uSync" Version="17.4.3" Condition="'$(UmbracoMajor)' == '17'" />
+		<PackageVersion Include="uSync" Version="18.1.5" Condition="'$(UmbracoMajor)' == '18'" />
 		<PackageVersion Include="Microsoft.ICU.ICU4C.Runtime" Version="72.1.0.3" />
 	</ItemGroup>
 

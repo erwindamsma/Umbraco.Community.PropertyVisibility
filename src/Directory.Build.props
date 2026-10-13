@@ -10,8 +10,32 @@
 	</PropertyGroup>
 
 	<!--
-		Umbraco.Cms 17 (up to 17.7.1) pins SixLabors.ImageSharp 3.1.12, and these advisories are only fixed in 4.1.2, which
-		Umbraco 17 does not support. Only the test site and the unit tests reference it, so the advisories are accepted for
+		The Umbraco major of this build. One source builds two packages: 1.x for Umbraco 17 and 2.x for Umbraco 18. The first
+		of these wins: -p:UmbracoMajor=18; the major of an exact -p:UmbracoCmsVersion=[18.2.1]; the major of a release
+		-p:Version (1.x builds for 17, 2.x for 18); otherwise 17. src/Directory.Packages.props picks the Umbraco range and the
+		uSync version from it, and the compile constant UMBRACO_17 or UMBRACO_18 selects the version-specific code.
+	-->
+	<PropertyGroup Label="Umbraco major">
+		<UmbracoMajor Condition="'$(UmbracoMajor)' == '' AND '$(UmbracoCmsVersion)' != ''">$([System.Text.RegularExpressions.Regex]::Match('$(UmbracoCmsVersion)', '[0-9]+'))</UmbracoMajor>
+		<UmbracoMajor Condition="'$(UmbracoMajor)' == '' AND $([System.Text.RegularExpressions.Regex]::IsMatch('$(Version)', '^1\.'))">17</UmbracoMajor>
+		<UmbracoMajor Condition="'$(UmbracoMajor)' == '' AND $([System.Text.RegularExpressions.Regex]::IsMatch('$(Version)', '^2\.'))">18</UmbracoMajor>
+		<UmbracoMajor Condition="'$(UmbracoMajor)' == ''">17</UmbracoMajor>
+		<PvPackageMajor Condition="'$(UmbracoMajor)' == '17'">1</PvPackageMajor>
+		<PvPackageMajor Condition="'$(UmbracoMajor)' == '18'">2</PvPackageMajor>
+		<DefineConstants>$(DefineConstants);UMBRACO_$(UmbracoMajor)</DefineConstants>
+	</PropertyGroup>
+
+	<Target Name="_PvCheckUmbracoMajor" BeforeTargets="CollectPackageReferences;BeforeBuild">
+		<PropertyGroup>
+			<_PvUmbracoCmsMajor>$([System.Text.RegularExpressions.Regex]::Match('$(UmbracoCmsVersion)', '[0-9]+'))</_PvUmbracoCmsMajor>
+		</PropertyGroup>
+		<Error Condition="'$(PvPackageMajor)' == ''" Text="Umbraco $(UmbracoMajor) is not supported: build for Umbraco 17 (package 1.x) or 18 (package 2.x), for example -p:UmbracoMajor=18." />
+		<Error Condition="'$(_PvUmbracoCmsMajor)' != '$(UmbracoMajor)'" Text="UmbracoCmsVersion $(UmbracoCmsVersion) is not an Umbraco $(UmbracoMajor) version (UmbracoMajor)." />
+	</Target>
+
+	<!--
+		Umbraco.Cms 17 (up to 17.7.1) and 18 (up to 18.2.1) pin SixLabors.ImageSharp 3.1.12, and these advisories are only
+		fixed in 4.1.2, which neither supports. Only the test site and the unit tests reference it, so the advisories are accepted for
 		the projects that do not ship and nowhere else; with TreatWarningsAsErrors they would fail the restore. Remove them once Umbraco ships a patched ImageSharp. The condition works here because MSBuild evaluates
 		every property, including the project's IsPackable, before any item.
 	-->

@@ -1,3 +1,4 @@
+#if UMBRACO_17
 using Umbraco.Cms.Api.Management.OpenApi;
 
 namespace Umbraco.Community.PropertyVisibility.Api.OpenApi;
@@ -7,11 +8,12 @@ namespace Umbraco.Community.PropertyVisibility.Api.OpenApi;
 ///     document, so the generated client and Swagger UI authenticate the same way as the Management API.
 /// </summary>
 /// <remarks>
-///     Together with <see cref="PropertyVisibilitySwaggerGenOptionsSetup" /> this is the only server code that depends
-///     on the OpenAPI registration stack, which Umbraco 18 changes.
+///     Umbraco 17 only (package 1.x): Umbraco 18 replaced Swashbuckle's SwaggerGen, and the 2.x build registers the
+///     document through <see cref="PropertyVisibilityOpenApi" />.
 /// </remarks>
 public sealed class PropertyVisibilitySecurityFilter : BackOfficeSecurityRequirementsOperationFilterBase
 {
 	/// <inheritdoc />
 	protected override string ApiName => Constants.ApiName;
 }
+#endif
