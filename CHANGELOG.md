@@ -6,6 +6,8 @@ The release workflow publishes the section whose heading matches the tag (`## [1
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-10-13
+
 ### Added
 
 - Umbraco 18 support, as package 2.x: 2.0.0 depends on Umbraco `[18.2.1, 19.0.0)` and is verified on 18.2.1. 1.x stays the package for Umbraco 17. Both are built from the same source and read the same configuration; 2.x serves the package's OpenAPI document at `/umbraco/openapi/property-visibility.json`, where Umbraco 18 serves OpenAPI documents. See [Upgrading to Umbraco 18](https://github.com/erwindamsma/Umbraco.Community.PropertyVisibility#upgrading-to-umbraco-18).
