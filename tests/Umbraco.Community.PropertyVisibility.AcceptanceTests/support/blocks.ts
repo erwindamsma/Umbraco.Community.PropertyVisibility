@@ -4,7 +4,7 @@ import { openDocument } from './backoffice.js';
 import { managementApi, type DocumentModel } from './management-api.js';
 
 /**
- * The element types of the seeded blocks (uSync/v17/ContentTypes in the test site). The keys are stable (the seed
+ * The element types of the seeded blocks (uSync/seed/ContentTypes in the test site). The keys are stable (the seed
  * derives them from the alias); resolveElementTypes() checks them against the running site.
  */
 export const ELEMENT_TYPES = {

@@ -67,6 +67,12 @@ export async function managementApi<T = unknown>(page: Page, path: string): Prom
 	return body;
 }
 
+/** The major of the Umbraco version the test site runs (the suite runs against Umbraco 17 and 18). */
+export async function umbracoMajor(page: Page): Promise<number> {
+	const { version } = await managementApi<{ version: string }>(page, '/server/information');
+	return Number.parseInt(version, 10);
+}
+
 // ---- Documents ---------------------------------------------------------------------------------------------------
 
 interface TreeItem {

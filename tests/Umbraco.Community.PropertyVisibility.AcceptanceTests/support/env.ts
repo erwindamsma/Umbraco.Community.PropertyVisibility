@@ -10,7 +10,11 @@ export const ADMIN_PASSWORD = process.env.PV_ADMIN_PASSWORD ?? 'PropertyVisibili
 
 /** The package's backoffice API. */
 export const HIDDEN_FIELDS_PATH = '/umbraco/property-visibility/v1/hiddenfields';
-export const SWAGGER_PATH = '/umbraco/swagger/property-visibility/swagger.json';
+
+/** The package's OpenAPI document: Swashbuckle's path on Umbraco 17, Microsoft.AspNetCore.OpenApi's on Umbraco 18. */
+export function openApiDocumentPath(umbracoMajor: number): string {
+	return umbracoMajor >= 18 ? '/umbraco/openapi/property-visibility.json' : '/umbraco/swagger/property-visibility/swagger.json';
+}
 
 /** Aliases the package registers (Client/src/constants.ts, Client/public/umbraco-package.json). */
 export const PACKAGE_ID = 'Umbraco.Community.PropertyVisibility';
@@ -29,7 +33,7 @@ export const APPLIED_EVENT = 'umbraco-community-property-visibility:applied';
  */
 export const DIRECT_CALL_HEADER = 'x-pv-acceptance-direct';
 
-/** Names of the seeded content (uSync/v17 in the test site). */
+/** Names of the seeded content (uSync/seed in the test site). */
 export const SAMPLE = {
 	corporateSite: 'Corporate site',
 	campaignSite: 'Campaign site',
