@@ -11,10 +11,10 @@ updates:
       minor-and-patch:
         update-types: ["minor", "patch"]
     ignore:
-      # The Umbraco floor is a deliberate decision (widened only after the acceptance checklist runs);
-      # Umbraco 18 is a separate major of this package.
+      # The Umbraco floor of each major (17 for package 1.x, 18 for 2.x) is a deliberate decision, widened only after
+      # the acceptance checklist runs.
       - dependency-name: "Umbraco.Cms*"
-      # uSync majors follow Umbraco majors (uSync 18 needs Umbraco 18), so a major update can never restore here.
+      # uSync majors follow Umbraco majors (one PackageVersion per Umbraco major), so a major update can never restore.
       - dependency-name: "uSync"
         update-types: ["version-update:semver-major"]
       # Umbraco.Cms.Tests 17.x (the test builders) depends on NUnit 3.

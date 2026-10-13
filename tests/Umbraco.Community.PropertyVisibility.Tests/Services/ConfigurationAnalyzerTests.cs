@@ -38,7 +38,7 @@ public sealed class ConfigurationAnalyzerTests
 			Assert.That(analysis.Summary.RulesHash, Is.EqualTo(SampleRulesHash));
 			Assert.That(analysis.Summary.SiteCount, Is.EqualTo(3));
 			Assert.That(analysis.Summary.RootNodeKeys, Is.EqualTo(new[] { CorporateRoot, CampaignRoot }));
-			Assert.That(analysis.Summary.UmbracoVersion, Is.EqualTo(new Version(17, 6, 2)));
+			Assert.That(analysis.Summary.UmbracoVersion, Is.EqualTo(Constants.TestedUmbracoVersions[0]));
 			Assert.That(analysis.Summary.TestedUmbracoVersions, Is.EqualTo(Constants.TestedUmbracoVersions));
 			Assert.That(analysis.Summary.IsTestedUmbracoVersion, Is.True);
 		});
@@ -869,14 +869,22 @@ public sealed class ConfigurationAnalyzerTests
 		});
 	}
 
-	[TestCase(17, 8, 0, IssueSeverity.Info)]
-	[TestCase(17, 7, 2, IssueSeverity.Info)]
-	[TestCase(17, 6, 3, IssueSeverity.Info)]
-	[TestCase(18, 0, 0, IssueSeverity.Warning)]
-	[TestCase(16, 4, 0, IssueSeverity.Warning)]
-	public void An_untested_Umbraco_version_is_PV303(int major, int minor, int patch, IssueSeverity expected)
+	// Relative to the build's Umbraco major (17 for package 1.x, 18 for 2.x): another version of that major is Info, another
+	// major a Warning.
+	private static IEnumerable<TestCaseData> UntestedUmbracoVersions()
 	{
-		_site.UmbracoVersion = new Version(major, minor, patch);
+		int major = Constants.SupportedUmbracoMajor;
+		Version latest = Constants.TestedUmbracoVersions.Max()!;
+		yield return new TestCaseData(new Version(major, latest.Minor + 1, 0), IssueSeverity.Info);
+		yield return new TestCaseData(new Version(major, latest.Minor, latest.Build + 1), IssueSeverity.Info);
+		yield return new TestCaseData(new Version(major + 1, 0, 0), IssueSeverity.Warning);
+		yield return new TestCaseData(new Version(major - 1, 4, 0), IssueSeverity.Warning);
+	}
+
+	[TestCaseSource(nameof(UntestedUmbracoVersions))]
+	public void An_untested_Umbraco_version_is_PV303(Version version, IssueSeverity expected)
+	{
+		_site.UmbracoVersion = version;
 
 		ConfigurationAnalysis analysis = Analyze();
 
@@ -884,18 +892,16 @@ public sealed class ConfigurationAnalyzerTests
 		Assert.Multiple(() =>
 		{
 			Assert.That(issue.Severity, Is.EqualTo(expected));
-			Assert.That(issue.Message, Does.Contain($"Umbraco {major}.{minor}.{patch}"));
-			Assert.That(issue.Message, Does.Contain("17.6.2, 17.7.0, 17.7.1"));
+			Assert.That(issue.Message, Does.Contain($"Umbraco {version}"));
+			Assert.That(issue.Message, Does.Contain(string.Join(", ", Constants.TestedUmbracoVersions)));
 			Assert.That(analysis.Summary.IsTestedUmbracoVersion, Is.False);
 		});
 	}
 
-	[TestCase(17, 6, 2)]
-	[TestCase(17, 7, 0)]
-	[TestCase(17, 7, 1)]
-	public void A_tested_Umbraco_version_is_not_PV303(int major, int minor, int patch)
+	[TestCaseSource(typeof(Constants), nameof(Constants.TestedUmbracoVersions))]
+	public void A_tested_Umbraco_version_is_not_PV303(Version version)
 	{
-		_site.UmbracoVersion = new Version(major, minor, patch);
+		_site.UmbracoVersion = version;
 
 		ConfigurationAnalysis analysis = Analyze();
 

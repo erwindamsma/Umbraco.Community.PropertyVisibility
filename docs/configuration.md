@@ -233,7 +233,7 @@ Rules keyed by an element type alias apply inside blocks, exactly like rules for
 - A block has two halves, and each follows the rules of its own element type: the Content view uses the block's content element type (`promoBanner` above), the Settings view its settings element type (`promoBannerSettings`). A block type without a settings element type has no Settings half and requests nothing for it.
 - Each element type is requested once per document: the Content and Settings halves, every inline block and every nested block of the same type share the response, and closing and reopening a block's modal applies the rules again without a new request. A change to the rules therefore reaches blocks when the document is opened again, as for the document itself.
 
-Where it works (Umbraco 17.6.2, 17.7.0 and 17.7.1):
+Where it works (Umbraco 17.6.2, 17.7.0, 17.7.1 and 18.2.1):
 
 | Block editor | Editing | Covered by |
 |---|---|---|
@@ -354,7 +354,7 @@ Codes never change meaning once released. The health check links every issue to 
 | `PV206` | Info | A content type entry lists no properties and no containers (or is `null`), so it hides nothing. An entry whose content type does not exist is `PV104` instead; an empty entry gets no other check (no `PV205`). | Add the aliases to hide, or remove the entry. | Health check, log (Information) |
 | `PV301` | Warning | Appsettings defines `ContentTypes`, `RuleSets` or `Sites` while the rules file is in use; the file wins. | Keep the rules in one source. | Log (when it loads), health check |
 | `PV302` | Info | The package is disabled (`Enabled: false`). The rules are still checked. | Set `Enabled` to `true`. | Health check, log (Information), API warning |
-| `PV303` | Info for an untested 17.x, Warning for another major | The running Umbraco version is not in the tested list. | Check [compatibility.md](compatibility.md); report problems. | Health check, log |
+| `PV303` | Info for an untested version of the package's own Umbraco major (17.x for 1.x, 18.x for 2.x), Warning for another major | The running Umbraco version is not in the tested list. | Check [compatibility.md](compatibility.md); report problems. | Health check, log |
 | `PV304` | Warning | The rules file cannot be watched: its folder does not exist or cannot be read, or the system's file watcher limit is reached. The file is still read on every rebuild, but edits take effect after a restart or an appsettings change; the next appsettings reload tries to watch it again. | Create the folder, raise the watcher limit, or set `DOTNET_USE_POLLING_FILE_WATCHER=1`. | Log (when the watch fails), health check |
 
 ## The hidden-fields API

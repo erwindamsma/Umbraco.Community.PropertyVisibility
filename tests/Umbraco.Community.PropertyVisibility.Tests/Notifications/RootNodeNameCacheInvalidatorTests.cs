@@ -68,7 +68,7 @@ public sealed class RootNodeNameCacheInvalidatorTests
 	[Test]
 	public void A_move_below_the_top_level_keeps_the_name_cache()
 	{
-		_invalidator.Handle(new ContentMovedNotification(new MoveEventInfo<IContent>(Content(parentId: 1001), "-1,1000,1234", 1001, null), new EventMessages()));
+		_invalidator.Handle(new ContentMovedNotification(Move(Content(parentId: 1001), "-1,1000,1234"), new EventMessages()));
 
 		Assert.That(_requests, Is.Zero);
 		NameCacheCleared(Times.Never());
@@ -78,7 +78,7 @@ public sealed class RootNodeNameCacheInvalidatorTests
 	[TestCase(1000, "-1,1234", TestName = "A root moved below another document is a root change")]
 	public void A_move_to_or_from_the_top_level_clears_the_name_cache_and_asks_for_an_analysis(int newParentId, string originalPath)
 	{
-		_invalidator.Handle(new ContentMovedNotification(new MoveEventInfo<IContent>(Content(newParentId), originalPath, newParentId, null), new EventMessages()));
+		_invalidator.Handle(new ContentMovedNotification(Move(Content(newParentId), originalPath), new EventMessages()));
 
 		Assert.That(_requests, Is.EqualTo(1));
 		NameCacheCleared(Times.Once());
@@ -229,6 +229,15 @@ public sealed class RootNodeNameCacheInvalidatorTests
 	}
 
 	private static IContent Content(int parentId) => Mock.Of<IContent>(content => content.ParentId == parentId);
+
+	// The invalidator reads only the entity and the original path. Umbraco 18 made the constructor that takes the new
+	// parent's id obsolete and added one without it.
+	private static MoveEventInfo<IContent> Move(IContent content, string originalPath)
+#if UMBRACO_18
+		=> new(content, originalPath, newParentKey: null);
+#else
+		=> new(content, originalPath, content.ParentId, null);
+#endif
 
 	private static ContentCacheRefresher.JsonPayload Payload(Guid key, TreeChangeTypes changeTypes)
 		=> new() { Id = 1234, Key = key, ChangeTypes = changeTypes };

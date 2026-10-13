@@ -65,7 +65,7 @@ public static class UmbracoBuilderExtensions
 			.AddNotificationHandler<ContentDeletedNotification, RootNodeNameCacheInvalidator>()
 			.AddNotificationHandler<ContentCacheRefresherNotification, RootNodeNameCacheInvalidator>();
 
-		builder.Services.ConfigureOptions<PropertyVisibilitySwaggerGenOptionsSetup>();
+		builder.AddPropertyVisibilityOpenApi();
 
 		return builder;
 	}

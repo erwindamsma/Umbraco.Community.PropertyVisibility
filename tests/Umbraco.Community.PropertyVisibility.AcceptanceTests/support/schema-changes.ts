@@ -9,7 +9,7 @@ import { RUN_STATE_DIR } from './site-config.js';
 
 const API = '/umbraco/management/api/v1';
 
-/** Seeded types and data types (uSync/v17 in the test site) the changes build on. */
+/** Seeded types and data types (uSync/seed in the test site) the changes build on. */
 const SEED = {
 	siteType: '16a50c18-63e5-5204-8534-5bdf59dff45f',
 	memberType: 'd59be02f-1df9-4228-aa1e-01917d806cda',

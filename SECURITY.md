@@ -2,7 +2,7 @@
 
 ## Supported versions
 
-Security fixes go into the latest release of the current major version: 1.x, for Umbraco 17. Older 1.x releases, prereleases included, get no separate fixes; update to the latest 1.x.
+Security fixes go into the latest release of each supported major version: 1.x, for Umbraco 17, and 2.x, for Umbraco 18. Both are built from the same source, so a fix ships in both. Older releases of a major, prereleases included, get no separate fixes; update to the latest release of that major.
 
 ## Reporting a vulnerability
 

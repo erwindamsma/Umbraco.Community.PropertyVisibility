@@ -27,7 +27,10 @@ run dotnet pack "$PACKAGE_PROJECT" -c "$CONFIGURATION" --no-build -p:SkipClientB
 end_group
 
 group "Inspect package"
-run bash tools/inspect-nupkg.sh "$output" "$PACKAGE_VERSION" "$PACKAGE_DIR"
+# The range this build declares: the one of its Umbraco major (UMBRACO_MAJOR, or the major of a release version).
+umbraco_range=$(package_property UmbracoCmsVersion)
+[ -n "$umbraco_range" ] || fail "the package project has no UmbracoCmsVersion"
+run bash tools/inspect-nupkg.sh "$output" "$PACKAGE_VERSION" "$PACKAGE_DIR" "$umbraco_range"
 end_group
 
 if ci_build; then

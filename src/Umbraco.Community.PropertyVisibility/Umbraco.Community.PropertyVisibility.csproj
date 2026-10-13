@@ -158,6 +158,15 @@
 	</Target>
 
 	<!--
+		Pack: the package major belongs to the Umbraco major (src/Directory.Build.props): 1.x depends on Umbraco 17, 2.x on
+		Umbraco 18. CI and compatibility builds (0.x) may pack either.
+	-->
+	<Target Name="_PvVerifyPackageMajor" BeforeTargets="GenerateNuspec">
+		<Error Condition="!$(Version.StartsWith('0.')) AND !$(Version.StartsWith('$(PvPackageMajor).'))"
+		       Text="Pack: version $(Version) does not belong to Umbraco $(UmbracoMajor), whose package is $(PvPackageMajor).x. Build 1.x for Umbraco 17 and 2.x for Umbraco 18 (-p:UmbracoMajor)." />
+	</Target>
+
+	<!--
 		Pack: the backoffice client must be in the package. Without it the nupkg would still carry
 		buildTransitive/$(PackageId).props, whose import of the static web assets chain then breaks every consuming build
 		(MSB4019). build/ci/pack.sh inspects the package afterwards; this also stops a manual dotnet pack: the entry file and

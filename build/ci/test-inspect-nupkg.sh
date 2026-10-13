@@ -24,6 +24,9 @@ original=${packages[0]}
 package_name=$(basename "$original")
 version=$(unzip -p "$original" '*.nuspec' | sed -n 's:.*<version>\(.*\)</version>.*:\1:p' | head -n 1)
 [ -n "$version" ] || fail "no version in the nuspec of $original"
+# The range of this build's Umbraco major, as pack.sh passes it.
+umbraco_range=$(package_property UmbracoCmsVersion)
+[ -n "$umbraco_range" ] || fail "the package project has no UmbracoCmsVersion"
 
 python=
 for candidate in python3 python; do
@@ -87,7 +90,7 @@ PY
 # expect_rejected <case> <text the failure must contain>
 expect_rejected() {
 	local case=$1 expected=$2 output
-	if output=$(bash tools/inspect-nupkg.sh "$work/$case" "$version" "$PACKAGE_DIR" 2>&1); then
+	if output=$(bash tools/inspect-nupkg.sh "$work/$case" "$version" "$PACKAGE_DIR" "$umbraco_range" 2>&1); then
 		tail -n 20 <<< "$output"
 		fail "inspect-nupkg.sh accepted the package with $case"
 	fi
@@ -138,7 +141,7 @@ expect_rejected manifest-version "umbraco-package.json says version 9.9.9"
 corrupt exact-umbraco-dependency set-dependency Umbraco.Cms.Web.Common "[17.7.0]"
 expect_rejected exact-umbraco-dependency "depends on Umbraco.Cms.Web.Common [17.7.0]"
 
-if ! output=$(bash tools/inspect-nupkg.sh "$folder" "$version" "$PACKAGE_DIR" 2>&1); then
+if ! output=$(bash tools/inspect-nupkg.sh "$folder" "$version" "$PACKAGE_DIR" "$umbraco_range" 2>&1); then
 	tail -n 20 <<< "$output"
 	fail "inspect-nupkg.sh rejected the original package $original"
 fi

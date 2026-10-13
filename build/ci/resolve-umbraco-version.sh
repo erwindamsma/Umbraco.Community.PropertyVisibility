@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 # Prints the Umbraco.Cms version the compatibility workflow tests: the argument when one is given (it must exist on
-# nuget.org), otherwise the latest stable 17.x that is listed. Only the version goes to stdout.
+# nuget.org), otherwise the latest stable version of the major UMBRACO_MAJOR (default 17) that is listed. Only the
+# version goes to stdout.
 #
 #   bash build/ci/resolve-umbraco-version.sh            latest stable, listed 17.x, for example 17.7.0
+#   UMBRACO_MAJOR=18 bash build/ci/resolve-umbraco-version.sh    latest stable, listed 18.x
 #   bash build/ci/resolve-umbraco-version.sh 17.6.2     checks that 17.6.2 exists and prints it
 #   UMBRACO_CMS_VERSION=$(bash build/ci/resolve-umbraco-version.sh) bash build/ci/build.sh
 #

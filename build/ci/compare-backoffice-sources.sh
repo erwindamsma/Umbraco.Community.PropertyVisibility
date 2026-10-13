@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Compares the backoffice sources the client relies on (backoffice-sources.txt next to this script) between the last
-# verified Umbraco version, the highest in Constants.TestedUmbracoVersions, and UMBRACO_CMS_VERSION, from the
+# verified Umbraco version of the same major, the highest of that major in Constants.TestedUmbracoVersions (one list per
+# major), and UMBRACO_CMS_VERSION, from the
 # @umbraco-cms/backoffice npm packages, as compat.yml does. Each file is reprinted without comments by the client's
 # TypeScript before the diff, so changes to comments and formatting do not show.
 #
@@ -23,12 +24,15 @@ typescript=$CLIENT_DIR/node_modules/typescript
 [ -d "$typescript" ] || fail "$typescript not found; run build/ci/build.sh first"
 [[ $max_lines =~ ^[0-9]+$ ]] || fail "PV_COMPARE_MAX_LINES must be a number, got '$max_lines'"
 
-# The versions of `TestedUmbracoVersions = [new Version(17, 6, 2), new Version(17, 7, 0)];`, one per line.
+target=$UMBRACO_CMS_VERSION
+target_major=${target%%.*}
+# The versions of the target's major in `TestedUmbracoVersions = [new Version(17, 6, 2), new Version(17, 7, 0)];` (one
+# such line per Umbraco major), one per line.
 tested_versions=$(grep -E 'TestedUmbracoVersions *=' "$PACKAGE_DIR/Constants.cs" |
 	grep -oE 'new Version\( *[0-9]+, *[0-9]+, *[0-9]+ *\)' |
-	sed -E 's/new Version\( *([0-9]+), *([0-9]+), *([0-9]+) *\)/\1.\2.\3/' || true)
-[ -n "$tested_versions" ] || fail "no versions found in TestedUmbracoVersions in $PACKAGE_DIR/Constants.cs"
-target=$UMBRACO_CMS_VERSION
+	sed -E 's/new Version\( *([0-9]+), *([0-9]+), *([0-9]+) *\)/\1.\2.\3/' |
+	grep -E "^$target_major\." || true)
+[ -n "$tested_versions" ] || fail "no Umbraco $target_major versions found in TestedUmbracoVersions in $PACKAGE_DIR/Constants.cs"
 if [ -n "${1:-}" ]; then
 	base=$1
 	base_label="Umbraco $base"

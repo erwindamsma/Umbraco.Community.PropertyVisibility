@@ -99,12 +99,12 @@ export class UmbPropertyVisibilityDocumentWorkspaceContext extends UmbController
 		if (!this.#unique || !this.#isNew) return;
 
 		// Only a parent that was not known when the first request went out is filled in; a known one is never replaced.
-		// On Umbraco 17 getParentUnique() is authoritative: the first request already carries the create-under parent, and
-		// the parent entity context can emit a different, later value (the tree's parent) that would re-anchor the
+		// The synchronous create-under parent (#resolveParentKey) is authoritative: the first request already carries it,
+		// and the parent entity context can emit a different, later value (the tree's parent) that would re-anchor the
 		// document to another site's rules. Replacing a known parent would also be one-way: removeContainer cannot be
 		// undone until the workspace clears its structure, so tabs and groups the first response removed would not come
-		// back when the second hides fewer. Umbraco 18 (no getParentUnique) sends the first request without a parent
-		// unless the context was faster, and this path fills it in.
+		// back when the second hides fewer. Without a synchronous parent the first request goes out without one, unless
+		// the context was faster, and this path fills it in.
 		if (this.#site.getAnchor().parentKey !== undefined) return;
 
 		this.#site.setAnchor({ documentKey: this.#unique, parentKey: parentUnique });
@@ -112,10 +112,19 @@ export class UmbPropertyVisibilityDocumentWorkspaceContext extends UmbController
 	}
 
 	#resolveParentKey(): ParentKey {
-		// Umbraco 17: the create-under parent is available synchronously through getParentUnique() (deprecated, removed
-		// in 18), so the first request already carries it; the parent entity context covers the rest.
-		const probe = this.#workspace as unknown as { getParentUnique?: () => ParentKey } | undefined;
-		const immediate = typeof probe?.getParentUnique === 'function' ? probe.getParentUnique() : undefined;
+		// The create-under parent is available synchronously, so the first request already carries it: through
+		// getParentUnique() on Umbraco 17 (deprecated, removed in 18), and through _internal_getCreateUnderParent() on
+		// Umbraco 18 (internal, present since 17.6.2; core's own menu structure reads the same state). Both are probed, not
+		// typed. When neither exists, the parent entity context fills the parent in later (#onParent).
+		const probe = this.#workspace as unknown as
+			| { getParentUnique?: () => ParentKey; _internal_getCreateUnderParent?: () => { unique: ParentKey } | undefined }
+			| undefined;
+		const immediate =
+			typeof probe?.getParentUnique === 'function'
+				? probe.getParentUnique()
+				: typeof probe?._internal_getCreateUnderParent === 'function'
+					? probe._internal_getCreateUnderParent()?.unique
+					: undefined;
 		return immediate !== undefined ? immediate : this.#parentFromContext;
 	}
 
