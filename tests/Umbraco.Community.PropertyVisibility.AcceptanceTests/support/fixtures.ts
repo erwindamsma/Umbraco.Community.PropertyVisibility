@@ -53,6 +53,20 @@ const KNOWN_UPSTREAM_ERRORS: ReadonlyArray<{ issue: string; pattern: RegExp }> =
 		issue: 'umbraco-17.6.2-inline-list-block-detached-during-load',
 		pattern: /host was disconnected[\s\S]*UmbBlockEntriesContext[\s\S]*UMB-INLINE-LIST-BLOCK|UmbBlockEntriesContext with API Alias: default\)\. Controller is hosted on #document-fragment > UMB-INLINE-LIST-BLOCK/,
 	},
+	{
+		// Umbraco 17.6.2 to 17.7.1 and 18.2.1 (the constructors below are unchanged; the issue id names the version it was
+		// first reproduced on): the clipboard property actions (Copy and Paste) of a Block List or Block Grid property
+		// wait in their constructor for UMB_CLIPBOARD_PROPERTY_CONTEXT in a Promise.all without a catch, and umb-property
+		// only provides that context once the property editor has loaded. When the property is detached before that, the
+		// context request is cancelled and the Promise.all rejects unhandled, once per action: up to six on a landing page
+		// (Copy and Paste on mainBlocks, inlineBlocks and gridBlocks). Same trigger as the entry above; seen in spec 11
+		// (2026-09-30 and 2026-10-13, six errors in one test). Reproduced without the package on 2026-09-30, as often as
+		// with it: on 17.6.2 0 of 90 fresh page loads either way, 0 and 8 of 90 loads followed by the Content tab click
+		// without the package, 4 and 3 of 90 with it, 39 of 40 with 4x CPU throttling either way; on a stock 17.7.0 site
+		// 4 of 90 loads followed by the click.
+		issue: 'umbraco-17.6.2-clipboard-property-action-detached-during-load',
+		pattern: /UmbPropertyContext with API Alias: UmbClipboardPropertyContext\)\. Controller is hosted on UMB-POPOVER-LAYOUT > UMB-PROPERTY-ACTION/,
+	},
 ];
 
 /** The KNOWN_UPSTREAM_ERRORS issue a console or page error text matches, if any. */

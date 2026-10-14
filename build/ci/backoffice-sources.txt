@@ -16,6 +16,8 @@ packages/block/block/workspace/views/edit/block-workspace-view-edit-properties.e
 packages/block/block-list/components/inline-list-block/inline-list-block.element.js | inline Block List editing; the known upstream rejection (KNOWN_UPSTREAM_ERRORS)
 packages/block/block-single/components/inline-single-block/inline-single-block.element.js | inline Single Block editing
 packages/block/block-grid/components/block-grid-block-inline/block-grid-block-inline.element.js | Block Grid inline editing renders the first property without the view guard (documented limitation)
+packages/clipboard/property/actions/copy/copy-to-clipboard.property-action.js | the Copy property action of block properties; the known upstream rejection (KNOWN_UPSTREAM_ERRORS)
+packages/clipboard/property/actions/paste/paste-from-clipboard.property-action.js | the Paste property action of block properties; the known upstream rejection (KNOWN_UPSTREAM_ERRORS)
 packages/core/auth/auth.context.js | configureClient and getLatestToken for the package's API client
 libs/context-api/provide/context-boundary.controller.js | the site boundary of media, member and blueprint workspaces
 libs/context-proxy/context-proxy.controller.js | the modal context proxy that forwards a block's request to its document
