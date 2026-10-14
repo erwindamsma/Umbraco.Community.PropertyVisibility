@@ -8,7 +8,8 @@
 #
 # Environment (besides common.sh):
 #   PV_BASE_URL            the site to test (default https://localhost:$PV_PORT)
-#   PV_SITE_CONTENT_ROOT   the site's content root, when it is not this repository's test site folder
+#   PV_SITE_CONTENT_ROOT   the site's content root, when it is not this repository's test site folder (default: the
+#                          folder of PV_TEST_SITE_DIR when that is set)
 #   PV_GLOBAL_TIMEOUT_MS   upper bound for the whole run (default 1800000, 30 minutes: below the workflows' job
 #                          timeouts, so a hanging backoffice fails this step instead of cancelling the job)
 #   PV_MAX_FAILURES        with CI=true, stop after this many failed tests (default 10)
@@ -16,6 +17,13 @@
 source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 
 export PV_BASE_URL=${PV_BASE_URL:-https://localhost:$PV_PORT}
+# The specs change the running site's appsettings.json and rules file, so they need its folder (as a native path: node
+# on Windows does not read Git Bash's /c/... form).
+if [ -n "${PV_TEST_SITE_DIR:-}" ] && [ -z "${PV_SITE_CONTENT_ROOT:-}" ]; then
+	PV_SITE_CONTENT_ROOT=$REPO_ROOT/$TEST_SITE_DIR
+	if command -v cygpath > /dev/null; then PV_SITE_CONTENT_ROOT=$(cygpath -w "$PV_SITE_CONTENT_ROOT"); fi
+	export PV_SITE_CONTENT_ROOT
+fi
 
 cd "$ACCEPTANCE_DIR"
 
