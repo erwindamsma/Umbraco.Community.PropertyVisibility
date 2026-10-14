@@ -45,7 +45,7 @@ The documentation checks in the unit test project (`Documentation/` and `Configu
 - a complete JSON sample in the READMEs or in `docs/configuration.md` does not validate against the package's JSON schemas;
 - the tagline differs between the package `Description`, the READMEs and `umbraco-marketplace.json`.
 
-The console-errors spec (`08`) must stay green. Do not silence a new console error through `KNOWN_UPSTREAM_ERRORS`: that list holds one Umbraco error that also occurs on a site without this package ([docs/testing.md](docs/testing.md)).
+The console-errors spec (`08`) must stay green. Do not silence a new console error through `KNOWN_UPSTREAM_ERRORS`: that list holds only Umbraco errors that also occur on a site without this package ([docs/testing.md](docs/testing.md)).
 
 ## Regenerating generated code
 
