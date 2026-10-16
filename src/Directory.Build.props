@@ -63,4 +63,13 @@
 		<NuGetAuditSuppress Include="https://github.com/advisories/GHSA-r955-8q5j-3h83" />
 	</ItemGroup>
 
+	<!--
+		MessagePack before 3.1.9 (advisory of 2026-10-15). Umbraco.Cms 17 (up to 17.7.1) and 18 (up to 18.2.1) resolve it to
+		3.1.8 for their own cache serialization; the same reasoning and removal condition as above, once Umbraco references
+		3.1.9 or later.
+	-->
+	<ItemGroup>
+		<NuGetAuditSuppress Include="https://github.com/advisories/GHSA-qhrr-8q5h-9q3h" />
+	</ItemGroup>
+
 </Project>
