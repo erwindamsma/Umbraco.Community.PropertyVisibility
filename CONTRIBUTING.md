@@ -69,7 +69,7 @@ The workflows (`ci.yml`, `compat.yml`, `release.yml`) only call the bash scripts
 | `start-test-site.sh`, `stop-test-site.sh` | Start the built test site in the background on a clean SQLite database (it deletes `umbraco/Data`) and wait for `/umbraco` to answer 200; stop it again. PID file and console log in `artifacts/test-site`; a stale PID file whose process is not the test site is removed, never signalled. |
 | `acceptance.sh` | `npm ci`, typecheck, `npx playwright install chromium` and the whole Playwright suite against `PV_BASE_URL`, bounded by `--global-timeout` (and `--max-failures` with `CI=true`); `playwright-report/` and `test-results/` stay in the acceptance project. |
 | `check-served-manifest.sh` | Checks that the running test site serves `umbraco-package.json` with the package version the site was built with (from its `deps.json`, or the version given as argument), which the backoffice adds to the bundle URL as `?umb__rnd=`. |
-| `published-package-site.sh` | Builds a copy of the test site under `artifacts/published-package-site` (`PV_TEST_SITE_DIR`) that installs the package from nuget.org instead of the `ProjectReference`: the latest listed 1.x for Umbraco 17, 2.x for 18 (`PV_PACKAGE_VERSION` picks another), on `UMBRACO_CMS_VERSION`. Checks the resolved Umbraco and package versions and the two JSON schemas the package's `buildTransitive` props provide. With `PV_TEST_SITE_DIR` set, `start-test-site.sh`, `acceptance.sh` and `stop-test-site.sh` run that copy (compat.yml). |
+| `published-package-site.sh` | Builds a copy of the test site under `artifacts/published-package-site` (`PV_TEST_SITE_DIR`) that installs the package instead of the `ProjectReference`. From nuget.org: the latest listed 1.x for Umbraco 17, 2.x for 18 (`PV_PACKAGE_VERSION` picks another), on `UMBRACO_CMS_VERSION` (compat.yml). With `PV_PACKAGE_SOURCE=artifacts/nupkg`: the nupkg `pack.sh` wrote, by default on the lowest Umbraco version it supports (ci.yml); a `0.0.0-*` version is first removed from the NuGet global packages folder, so a repack under the same number is not restored from the cache. Checks the resolved Umbraco and package versions (a local nupkg byte for byte) and the two JSON schemas the package's `buildTransitive` props provide. With `PV_TEST_SITE_DIR` set, `start-test-site.sh`, `acceptance.sh` and `stop-test-site.sh` run that copy. |
 | `resolve-umbraco-version.sh` | Prints the latest stable, listed Umbraco version of the major `UMBRACO_MAJOR` (default 17) from nuget.org's registration index, or checks a given version (needs `node`). |
 | `compare-backoffice-sources.sh` | Compares the backoffice sources the client relies on (`build/ci/backoffice-sources.txt`) between the last verified version of the same major (the highest of that major in `Constants.TestedUmbracoVersions`, or the version given as argument) and `UMBRACO_CMS_VERSION`, from the `@umbraco-cms/backoffice` npm packages, reprinted without comments by the client's TypeScript (run `build.sh` first). Writes `summary.md`, `report.md` and `sources.diff` to `artifacts/backoffice-compare` (`PV_COMPARE_DIR`). |
 
@@ -77,6 +77,12 @@ Environment: `PACKAGE_VERSION` (default `0.0.0-local`; a release version selects
 
 ```bash
 bash build/ci/build.sh && bash build/ci/test.sh && bash build/ci/schema-check.sh && bash build/ci/pack.sh && bash build/ci/test-inspect-nupkg.sh
+# ci.yml's acceptance job: the suite against a copy of the test site that installs the nupkg pack.sh wrote
+export PV_TEST_SITE_DIR=artifacts/published-package-site
+PV_PACKAGE_SOURCE=artifacts/nupkg bash build/ci/published-package-site.sh && bash build/ci/start-test-site.sh \
+  && bash build/ci/check-served-manifest.sh && bash build/ci/acceptance.sh; bash build/ci/stop-test-site.sh; \
+  unset PV_TEST_SITE_DIR
+# The same suite against the repository's test site (ProjectReference), as compat.yml runs it
 bash build/ci/start-test-site.sh && bash build/ci/acceptance.sh; bash build/ci/stop-test-site.sh
 
 # The same for Umbraco 18 (package 2.x)
@@ -95,7 +101,7 @@ bash build/ci/published-package-site.sh && bash build/ci/start-test-site.sh && b
   && bash build/ci/acceptance.sh; bash build/ci/stop-test-site.sh; unset PV_TEST_SITE_DIR
 ```
 
-The test site started by `start-test-site.sh` runs the Release build output with `ASPNETCORE_ENVIRONMENT=Development`. It uses the checkout's test site folder as its content root, the same as `dotnet run`: the same `umbraco/Data` database folder, and the same `appsettings.json` that specs `10` to `12` rewrite. Stop a test site you started with `dotnet run` first; `start-test-site.sh` refuses to delete a database another process on the same machine holds open (Linux, with `fuser`), and on Windows the delete fails on the locked file. `PV_PORT` only moves the port: a second site next to a running one needs its own checkout. `pack.sh` refuses to run with `UMBRACO_CMS_VERSION` set, because the package would then depend on that exact version; build again without it first.
+The test site started by `start-test-site.sh` runs the Release build output with `ASPNETCORE_ENVIRONMENT=Development`. It uses the checkout's test site folder (or the copy in `PV_TEST_SITE_DIR`) as its content root, the same as `dotnet run`: the same `umbraco/Data` database folder, and the same `appsettings.json` that specs `10` to `12` rewrite. Stop a test site you started with `dotnet run` first; `start-test-site.sh` refuses to delete a database another process on the same machine holds open (Linux, with `fuser`), and on Windows the delete fails on the locked file. `PV_PORT` only moves the port: a second site next to a running one needs its own checkout. `pack.sh` refuses to run with `UMBRACO_CMS_VERSION` set, because the package would then depend on that exact version; build again without it first.
 
 Scheduled runs: GitHub disables a scheduled workflow after 60 days without activity in a public repository, so `compat.yml` can stop running in a quiet period. Before a release, check the date of the last green compatibility run in the Actions tab and re-enable the workflow there when it was disabled.
 

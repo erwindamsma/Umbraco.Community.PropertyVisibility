@@ -7,7 +7,7 @@
 #   bash build/ci/check-served-manifest.sh 2.0.0      expects 2.0.0
 #
 # Without an argument the expected version comes from the deps.json of the site in TEST_SITE_DIR (PV_TEST_SITE_DIR):
-# the published package's version for the copy that installs it from nuget.org, PACKAGE_VERSION for the repository's
+# the installed package's version for the copy published-package-site.sh builds, PACKAGE_VERSION for the repository's
 # test site.
 source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 

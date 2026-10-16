@@ -17,7 +17,7 @@
 #   CONFIGURATION                 default Release
 #   PV_TEST_SITE_DIR              the site start-test-site.sh, acceptance.sh and stop-test-site.sh run, when it is not the
 #                                 repository's test site: published-package-site.sh builds one that installs the package
-#                                 from nuget.org (artifacts/published-package-site)
+#                                 from nuget.org or from a nupkg (artifacts/published-package-site)
 
 set -euo pipefail
 
