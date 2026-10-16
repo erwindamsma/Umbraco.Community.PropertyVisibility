@@ -195,12 +195,7 @@ jobs:
       - name: The served manifest carries the package version
         env:
           EXPECTED_VERSION: ${{ steps.site.outputs.package-version }}
-        run: |
-          set -euo pipefail
-          manifest=$(curl -k -fsS "https://localhost:$PV_PORT/App_Plugins/UmbracoCommunityPropertyVisibility/umbraco-package.json")
-          grep -qF "\"version\": \"$EXPECTED_VERSION\"" <<< "$manifest" \
-            || { echo "::error::the served umbraco-package.json does not carry version $EXPECTED_VERSION"; exit 1; }
-          echo "umbraco-package.json version $EXPECTED_VERSION"
+        run: bash build/ci/check-served-manifest.sh "$EXPECTED_VERSION"
 
       - name: Playwright suite
         run: bash build/ci/acceptance.sh
