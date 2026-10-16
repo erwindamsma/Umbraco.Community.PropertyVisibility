@@ -51,7 +51,7 @@ if [ -z "$expected" ]; then
 	[ -n "$expected" ] || fail "$PACKAGE_DIR/obj/project.assets.json names no Umbraco.Cms.Core version"
 fi
 mismatches=()
-for project in "$PACKAGE_DIR" "$TEST_SITE_DIR" "$TESTS_DIR" "$SCHEMA_GENERATOR_DIR"; do
+for project in "$PACKAGE_DIR" "$TEST_SITE_PROJECT_DIR" "$TESTS_DIR" "$SCHEMA_GENERATOR_DIR"; do
 	packages=$(resolved_umbraco_packages "$project")
 	[ -n "$packages" ] || fail "$project/obj/project.assets.json names no Umbraco.Cms package"
 	grep -q '^Umbraco\.Cms\.Core ' <<< "$packages" || fail "$project/obj/project.assets.json names no Umbraco.Cms.Core version"
@@ -60,7 +60,7 @@ for project in "$PACKAGE_DIR" "$TEST_SITE_DIR" "$TESTS_DIR" "$SCHEMA_GENERATOR_D
 		same_version "$version" "$expected" || mismatches+=("$project: $id $version")
 	done <<< "$packages"
 done
-site_runtime=$(test_site_umbraco_version)
+site_runtime=$(test_site_umbraco_version "$TEST_SITE_PROJECT_DIR")
 [ -n "$site_runtime" ] || fail "the test site's deps.json names no Umbraco.Cms.Core version"
 echo "Test site build output ($TEST_SITE_NAME.deps.json): Umbraco.Cms.Core $site_runtime"
 same_version "$site_runtime" "$expected" || mismatches+=("$TEST_SITE_NAME.deps.json: Umbraco.Cms.Core $site_runtime")

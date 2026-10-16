@@ -15,6 +15,9 @@
 #   CONTINUOUS_INTEGRATION_BUILD  true for a deterministic build (-p:ContinuousIntegrationBuild=true: source paths mapped
 #                                 to /_/); defaults to $CI, which GitHub Actions sets to true
 #   CONFIGURATION                 default Release
+#   PV_TEST_SITE_DIR              the site start-test-site.sh, acceptance.sh and stop-test-site.sh run, when it is not the
+#                                 repository's test site: published-package-site.sh builds one that installs the package
+#                                 from nuget.org (artifacts/published-package-site)
 
 set -euo pipefail
 
@@ -27,7 +30,9 @@ PACKAGE_DIR=src/Umbraco.Community.PropertyVisibility
 PACKAGE_PROJECT=$PACKAGE_DIR/Umbraco.Community.PropertyVisibility.csproj
 CLIENT_DIR=$PACKAGE_DIR/Client
 CLIENT_OUTPUT_DIR=$PACKAGE_DIR/wwwroot/App_Plugins/UmbracoCommunityPropertyVisibility
-TEST_SITE_DIR=src/Umbraco.Community.PropertyVisibility.TestSite
+TEST_SITE_PROJECT_DIR=src/Umbraco.Community.PropertyVisibility.TestSite
+# The site the start, stop and acceptance scripts run (same project name, so the same dll).
+TEST_SITE_DIR=${PV_TEST_SITE_DIR:-$TEST_SITE_PROJECT_DIR}
 TEST_SITE_NAME=Umbraco.Community.PropertyVisibility.TestSite
 TESTS_DIR=tests/Umbraco.Community.PropertyVisibility.Tests
 ACCEPTANCE_DIR=tests/Umbraco.Community.PropertyVisibility.AcceptanceTests
@@ -121,9 +126,10 @@ resolved_umbraco_packages() {
 	grep -oE '"Umbraco\.Cms(\.[A-Za-z0-9.]+)?/[^"]+"' "$assets" | tr -d '"' | sed -E 's|/| |' | sort -u || true
 }
 
-# The Umbraco.Cms.Core version the built test site runs (from its deps.json), or nothing.
+# The Umbraco.Cms.Core version the built test site runs (from its deps.json), or nothing. The site folder defaults to
+# TEST_SITE_DIR.
 test_site_umbraco_version() {
-	local deps=$TEST_SITE_DIR/bin/$CONFIGURATION/$TARGET_FRAMEWORK/$TEST_SITE_NAME.deps.json
+	local deps=${1:-$TEST_SITE_DIR}/bin/$CONFIGURATION/$TARGET_FRAMEWORK/$TEST_SITE_NAME.deps.json
 	[ -f "$deps" ] || return 0
 	grep -oE '"Umbraco\.Cms\.Core/[^"]+"' "$deps" | head -n 1 | sed -E 's/"Umbraco\.Cms\.Core\/([^"]+)"/\1/'
 }

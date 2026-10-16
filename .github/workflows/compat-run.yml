@@ -3,8 +3,11 @@ name: Compatibility run
 # One compatibility run against one Umbraco major, called by compat.yml once per major (17 and 18): build, unit tests, a
 # type check of the client against that version's backoffice typings and the whole Playwright suite against the latest
 # stable version of the major (or a version given by hand). The build uses exactly that version
-# (-p:UmbracoCmsVersion=[x.y.z]) and fails when any Umbraco.Cms package resolves another one. A failed run, or a scheduled
-# run cancelled by its timeout, opens an issue "Compatibility: Umbraco <version>", or comments on the open one. Every run
+# (-p:UmbracoCmsVersion=[x.y.z]) and fails when any Umbraco.Cms package resolves another one. Next to it, the job
+# published-package runs the same suite against a copy of the test site that installs the latest published package of
+# the major's line (1.x for 17, 2.x for 18) from nuget.org, the way a site gets it (build/ci/published-package-site.sh).
+# A failed run, or a scheduled run cancelled by its timeout, opens an issue "Compatibility: Umbraco <version>", or
+# comments on the open one. Every run
 # also compares the backoffice sources the client relies on (build/ci/backoffice-sources.txt) with the last verified
 # version of the major and shows the result in its summary; a green run against a version that is not in
 # Constants.TestedUmbracoVersions opens one issue "Verify Umbraco <version>" with that comparison, for the manual part
@@ -139,12 +142,100 @@ jobs:
             artifacts/test-site/test-site.log
           if-no-files-found: ignore
 
+  # The package as a site installs it: no ProjectReference, so the nupkg's buildTransitive props and static web assets are
+  # what runs. Builds nothing of this repository but the copied test site.
+  published-package:
+    name: Published package on Umbraco ${{ inputs.umbraco-major }}.x
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    outputs:
+      umbraco-version: ${{ steps.resolve.outputs.version }}
+      package-version: ${{ steps.site.outputs.package-version }}
+    env:
+      PV_PORT: 44300
+      PV_TEST_SITE_DIR: artifacts/published-package-site
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+
+      - name: Setup Node
+        uses: actions/setup-node@v7.1.0
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: tests/Umbraco.Community.PropertyVisibility.AcceptanceTests/package-lock.json
+
+      - name: Resolve the Umbraco version
+        id: resolve
+        env:
+          REQUESTED_VERSION: ${{ inputs.umbraco-version }}
+        run: |
+          version=$(bash build/ci/resolve-umbraco-version.sh "$REQUESTED_VERSION")
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "UMBRACO_CMS_VERSION=$version" >> "$GITHUB_ENV"
+
+      - name: Build a copy of the test site with the package from nuget.org
+        id: site
+        run: |
+          bash build/ci/published-package-site.sh
+          echo "### Umbraco.Cms $UMBRACO_CMS_VERSION with the published package" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Start the test site
+        run: bash build/ci/start-test-site.sh
+
+      # The backoffice adds the manifest's version to the bundle URL (?umb__rnd=), which keeps browsers from caching the
+      # previous release.
+      - name: The served manifest carries the package version
+        env:
+          EXPECTED_VERSION: ${{ steps.site.outputs.package-version }}
+        run: bash build/ci/check-served-manifest.sh "$EXPECTED_VERSION"
+
+      - name: Playwright suite
+        run: bash build/ci/acceptance.sh
+
+      - name: Stop the test site
+        if: always()
+        run: bash build/ci/stop-test-site.sh
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: compat-published-package-playwright-report-umbraco-${{ inputs.umbraco-major }}
+          path: tests/Umbraco.Community.PropertyVisibility.AcceptanceTests/playwright-report
+          if-no-files-found: ignore
+
+      - name: Upload Playwright test results
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: compat-published-package-playwright-test-results-umbraco-${{ inputs.umbraco-major }}
+          path: tests/Umbraco.Community.PropertyVisibility.AcceptanceTests/test-results
+          if-no-files-found: ignore
+
+      - name: Upload test site logs
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: compat-published-package-test-site-logs-umbraco-${{ inputs.umbraco-major }}
+          path: |
+            artifacts/published-package-site/umbraco/Logs
+            artifacts/test-site/test-site.log
+          if-no-files-found: ignore
+
   # The only jobs that may write issues. This one also runs when a scheduled run was cancelled (the job timeout cancels
   # a job).
   report-failure:
     name: Open or update the compatibility issue
-    needs: compat
-    if: ${{ always() && (needs.compat.result == 'failure' || (needs.compat.result == 'cancelled' && github.event_name == 'schedule')) }}
+    needs: [compat, published-package]
+    if: ${{ always() && (contains(needs.*.result, 'failure') || (contains(needs.*.result, 'cancelled') && github.event_name == 'schedule')) }}
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
@@ -154,13 +245,15 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
-          UMBRACO_VERSION: ${{ needs.compat.outputs.umbraco-version }}
+          UMBRACO_VERSION: ${{ needs.compat.outputs.umbraco-version || needs.published-package.outputs.umbraco-version }}
           COMPAT_RESULT: ${{ needs.compat.result }}
+          PUBLISHED_RESULT: ${{ needs.published-package.result }}
+          PACKAGE_VERSION_TESTED: ${{ needs.published-package.outputs.package-version }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
           set -euo pipefail
           title="Compatibility: Umbraco ${UMBRACO_VERSION:-$UMBRACO_MAJOR.x (version not resolved)}"
-          body="The compatibility run against Umbraco.Cms ${UMBRACO_VERSION:-$UMBRACO_MAJOR.x (not resolved)} ended with '$COMPAT_RESULT': $RUN_URL"
+          body="The compatibility run against Umbraco.Cms ${UMBRACO_VERSION:-$UMBRACO_MAJOR.x (not resolved)}: the build from source ended with '$COMPAT_RESULT', the published package${PACKAGE_VERSION_TESTED:+ $PACKAGE_VERSION_TESTED} with '$PUBLISHED_RESULT'. $RUN_URL"
           number=$(gh issue list --state open --search "\"$title\" in:title" --json number,title --limit 50 \
             | jq -r --arg title "$title" '[.[] | select(.title == $title)][0].number // empty')
           if [ -n "$number" ]; then
