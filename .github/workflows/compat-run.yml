@@ -226,7 +226,7 @@ jobs:
         with:
           name: compat-published-package-test-site-logs-umbraco-${{ inputs.umbraco-major }}
           path: |
-            artifacts/published-package-site/umbraco/Logs
+            ${{ env.PV_TEST_SITE_DIR }}/umbraco/Logs
             artifacts/test-site/test-site.log
           if-no-files-found: ignore
 

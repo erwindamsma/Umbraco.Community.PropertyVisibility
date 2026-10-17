@@ -2,7 +2,7 @@ name: CI
 
 # Every step calls a script in build/ci, so a local run executes the same commands (CONTRIBUTING.md, "Run CI locally").
 # Both jobs run once per Umbraco major: the same source builds package 1.x for Umbraco 17 and 2.x for Umbraco 18
-# (UMBRACO_MAJOR, src/Directory.Build.props).
+# (UMBRACO_MAJOR, src/Directory.Build.props). The acceptance job installs the nupkg the build job packed.
 
 on:
   push:
@@ -98,7 +98,9 @@ jobs:
           path: TestResults
           if-no-files-found: ignore
 
-  # Skipped for a documentation-only change (the required check is the gate job "Acceptance tests (Playwright)" below).
+  # The nupkg of build-test-pack, installed into a copy of the test site the way a site gets it: no ProjectReference, so
+  # the package's buildTransitive props, JSON schemas and static web assets are what the suite tests. Skipped for a
+  # documentation-only change (the required check is the gate job "Acceptance tests (Playwright)" below).
   acceptance:
     name: Acceptance tests (Playwright, Umbraco ${{ matrix.umbraco-major }})
     needs: build-test-pack
@@ -111,6 +113,7 @@ jobs:
         umbraco-major: [17, 18]
     env:
       PV_PORT: 44300
+      PV_TEST_SITE_DIR: artifacts/published-package-site
       UMBRACO_MAJOR: ${{ matrix.umbraco-major }}
     steps:
       - name: Checkout
@@ -128,16 +131,28 @@ jobs:
         with:
           node-version: 24
           cache: npm
-          cache-dependency-path: |
-            src/Umbraco.Community.PropertyVisibility/Client/package-lock.json
-            tests/Umbraco.Community.PropertyVisibility.AcceptanceTests/package-lock.json
+          cache-dependency-path: tests/Umbraco.Community.PropertyVisibility.AcceptanceTests/package-lock.json
 
-      - name: Build
-        run: bash build/ci/build.sh
+      - name: Download the package
+        uses: actions/download-artifact@v8
+        with:
+          name: nupkg-umbraco-${{ matrix.umbraco-major }}
+          path: artifacts/nupkg
+
+      # On the lowest Umbraco version the package supports, the one build-test-pack resolved.
+      - name: Build a copy of the test site with the package
+        env:
+          PV_PACKAGE_SOURCE: artifacts/nupkg
+        run: bash build/ci/published-package-site.sh
 
       # Clean SQLite database, unattended install and uSync import; waits for the backoffice to answer 200.
       - name: Start the test site
         run: bash build/ci/start-test-site.sh
+
+      # The backoffice adds the manifest's version to the bundle URL (?umb__rnd=), which keeps browsers from caching the
+      # previous release.
+      - name: The served manifest carries the package version
+        run: bash build/ci/check-served-manifest.sh "$PACKAGE_VERSION"
 
       - name: Playwright suite
         run: bash build/ci/acceptance.sh
@@ -168,7 +183,7 @@ jobs:
         with:
           name: test-site-logs-umbraco-${{ matrix.umbraco-major }}
           path: |
-            src/Umbraco.Community.PropertyVisibility.TestSite/umbraco/Logs
+            ${{ env.PV_TEST_SITE_DIR }}/umbraco/Logs
             artifacts/test-site/test-site.log
           if-no-files-found: ignore
 
