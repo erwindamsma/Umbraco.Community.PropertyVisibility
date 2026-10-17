@@ -183,7 +183,7 @@ jobs:
         with:
           name: test-site-logs-umbraco-${{ matrix.umbraco-major }}
           path: |
-            artifacts/published-package-site/umbraco/Logs
+            ${{ env.PV_TEST_SITE_DIR }}/umbraco/Logs
             artifacts/test-site/test-site.log
           if-no-files-found: ignore
 
