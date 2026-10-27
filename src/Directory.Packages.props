@@ -21,7 +21,7 @@
 
 	<ItemGroup Label="Test site">
 		<!-- uSync majors follow Umbraco majors -->
-		<PackageVersion Include="uSync" Version="17.4.3" Condition="'$(UmbracoMajor)' == '17'" />
+		<PackageVersion Include="uSync" Version="17.5.0" Condition="'$(UmbracoMajor)' == '17'" />
 		<PackageVersion Include="uSync" Version="18.1.5" Condition="'$(UmbracoMajor)' == '18'" />
 		<PackageVersion Include="Microsoft.ICU.ICU4C.Runtime" Version="72.1.0.3" />
 	</ItemGroup>
