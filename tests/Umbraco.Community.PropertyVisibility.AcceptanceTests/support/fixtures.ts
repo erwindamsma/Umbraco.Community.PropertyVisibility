@@ -42,19 +42,19 @@ export type ConsoleLogLine =
  */
 const KNOWN_UPSTREAM_ERRORS: ReadonlyArray<{ issue: string; pattern: RegExp }> = [
 	{
-		// Umbraco 17.6.2 to 17.7.1 and 18.2.1 (not fixed in either; the issue id names the version it was first reproduced on):
+		// Umbraco 17.6.2 to 17.7.2 and 18.2.1 to 18.2.2 (not fixed in either; the issue id names the version it was first reproduced on):
 		// umb-inline-list-block calls UmbBlockWorkspaceContext.load() without handling its rejection, and load() awaits
 		// the block entries context, which rejects when the inline block is detached (re-rendered) while it initializes.
 		// Trigger: a re-render of the tab view while the inline blocks load, as when a test clicks the already selected
 		// Content tab right after the document opened. Any spec that opens a landing page with inline blocks can hit it;
-		// seen in specs 05, 10 and 11. Reproduced on a stock 17.6.2 site with the package removed (no package assembly,
+		// seen in specs 05, 07, 10 and 11. Reproduced on a stock 17.6.2 site with the package removed (no package assembly,
 		// no App_Plugins folder, no manifest): 0 of 90 fresh page loads, 4 of 90 loads followed by that click, 18 of 40
 		// with 4x CPU throttling.
 		issue: 'umbraco-17.6.2-inline-list-block-detached-during-load',
 		pattern: /host was disconnected[\s\S]*UmbBlockEntriesContext[\s\S]*UMB-INLINE-LIST-BLOCK|UmbBlockEntriesContext with API Alias: default\)\. Controller is hosted on #document-fragment > UMB-INLINE-LIST-BLOCK/,
 	},
 	{
-		// Umbraco 17.6.2 to 17.7.1 and 18.2.1 (the constructors below are unchanged; the issue id names the version it was
+		// Umbraco 17.6.2 to 17.7.2 and 18.2.1 to 18.2.2 (the constructors below are unchanged; the issue id names the version it was
 		// first reproduced on): the clipboard property actions (Copy and Paste) of a Block List or Block Grid property
 		// wait in their constructor for UMB_CLIPBOARD_PROPERTY_CONTEXT in a Promise.all without a catch, and umb-property
 		// only provides that context once the property editor has loaded. When the property is detached before that, the

@@ -50,7 +50,7 @@
 
 	<!--
 		System.Security.Cryptography.Pkcs and System.Security.Cryptography.Xml up to 10.0.12 (advisories of 2026-10-13, fixed
-		in 10.0.13). Umbraco.Cms 17 (up to 17.7.1) and 18 (up to 18.2.1) resolve both to 10.0.10, through
+		in 10.0.13). Umbraco.Cms 17 (up to 17.7.2) and 18 (up to 18.2.2) resolve both to 10.0.10, through
 		Microsoft.AspNetCore.DataProtection (Examine, OpenIddict), and the test site resolves Pkcs 10.0.0. Every project gets
 		them from Umbraco, the package itself included, which does not use them; a site gets the same audit warnings from its
 		own Umbraco reference. With TreatWarningsAsErrors they would fail the restore. Remove them once Umbraco references
@@ -65,7 +65,7 @@
 	</ItemGroup>
 
 	<!--
-		MessagePack before 3.1.9 (advisory of 2026-10-15). Umbraco.Cms 17 (up to 17.7.1) and 18 (up to 18.2.1) resolve it to
+		MessagePack before 3.1.9 (advisory of 2026-10-15). Umbraco.Cms 17 (up to 17.7.2) and 18 (up to 18.2.2) resolve it to
 		3.1.8 for their own cache serialization; the same reasoning and removal condition as above, once Umbraco references
 		3.1.9 or later.
 	-->

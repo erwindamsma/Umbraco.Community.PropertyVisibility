@@ -31,7 +31,7 @@ internal static class Constants
 	/// <summary>
 	///     Umbraco versions the package's acceptance checklist has been run against.
 	/// </summary>
-	public static readonly IReadOnlyList<Version> TestedUmbracoVersions = [new Version(18, 2, 1)];
+	public static readonly IReadOnlyList<Version> TestedUmbracoVersions = [new Version(18, 2, 1), new Version(18, 2, 2)];
 #else
 	/// <summary>
 	///     The Umbraco major version this package is built and tested against (package 1.x).
@@ -41,7 +41,7 @@ internal static class Constants
 	/// <summary>
 	///     Umbraco versions the package's acceptance checklist has been run against.
 	/// </summary>
-	public static readonly IReadOnlyList<Version> TestedUmbracoVersions = [new Version(17, 6, 2), new Version(17, 7, 0), new Version(17, 7, 1)];
+	public static readonly IReadOnlyList<Version> TestedUmbracoVersions = [new Version(17, 6, 2), new Version(17, 7, 0), new Version(17, 7, 1), new Version(17, 7, 2)];
 #endif
 
 	/// <summary>
