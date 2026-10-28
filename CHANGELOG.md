@@ -6,6 +6,8 @@ The release workflow publishes the section whose heading matches the tag (`## [1
 
 ## [Unreleased]
 
+## [1.1.2] and [2.0.1] - 2026-10-28
+
 ### Changed
 
 - Umbraco 17.7.2 (1.x) and 18.2.2 (2.x) are verified: the health check no longer reports them as untested versions (`PV303`).
