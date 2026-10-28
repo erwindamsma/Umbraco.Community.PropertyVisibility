@@ -167,7 +167,7 @@ Rules keyed by an element type apply inside blocks, for the site of the document
 }
 ```
 
-Covered by the acceptance suite on Umbraco 17.6.2, 17.7.0, 17.7.1 and 18.2.1: Block List in a modal and inline, Block Grid in a modal, blocks inside blocks (two levels deep), blocks in a document that is not saved yet, blocks in a culture-variant document in split view, Single Block in a modal and inline, blocks in the rich text editor, and blocks pasted from the clipboard into another site's document (they follow the site they are pasted into).
+Covered by the acceptance suite on Umbraco 17.6.2, 17.7.0, 17.7.1, 17.7.2, 18.2.1 and 18.2.2: Block List in a modal and inline, Block Grid in a modal, blocks inside blocks (two levels deep), blocks in a document that is not saved yet, blocks in a culture-variant document in split view, Single Block in a modal and inline, blocks in the rich text editor, and blocks pasted from the clipboard into another site's document (they follow the site they are pasted into).
 
 Where it does not apply:
 
@@ -217,8 +217,10 @@ Up to Umbraco 13, fields were often hidden per site by a `SendingContentNotifica
 | 17.6.2 | 1.x | Verified, the lowest supported 17.x |
 | 17.7.0 | 1.x | Verified |
 | 17.7.1 | 1.x | Verified |
+| 17.7.2 | 1.x | Verified |
 | 17.0 to 17.6.1 | | Not supported: the package relies on backoffice APIs verified from 17.6.2 on |
 | 18.2.1 | 2.x | Verified, the lowest supported 18.x |
+| 18.2.2 | 2.x | Verified |
 | 18.0 to 18.2.0 | | Not supported: not verified |
 
 1.x depends on Umbraco `[17.6.2, 18.0.0)`, 2.x on `[18.2.1, 19.0.0)`, both on .NET 10. A later version of the same Umbraco major can be installed; until it is verified here, the health check reports it as `PV303` (Info). What each verification covered: [docs/compatibility.md](docs/compatibility.md).
@@ -252,8 +254,8 @@ Up to Umbraco 13, fields were often hidden per site by a `SendingContentNotifica
 - Discussion [#20538](https://github.com/umbraco/Umbraco-CMS/discussions/20538): a tab whose properties are all hidden by a view guard stays visible in Umbraco. For its own rules the package removes such tabs and groups (`HideEmptiedContainers`).
 - Issue [#21253](https://github.com/umbraco/Umbraco-CMS/issues/21253): a guard rule added as soon as a workspace context appears can be missed. The package adds its rules after its own request returns, and the acceptance suite has not shown the problem.
 - Issue [#21254](https://github.com/umbraco/Umbraco-CMS/issues/21254): Umbraco's write guard (read-only properties) does not stop pickers and block editors. The package only uses view guards; a read-only mode would depend on this issue.
-- On Umbraco 17.6.2 to 17.7.1 and 18.2.1 an inline-edited Block List item that is re-rendered while it initializes throws "Context request was cancelled, host was disconnected" as an uncaught promise rejection in the browser console, most often after a click on the already selected Content tab while the page loads. It was reproduced on a stock 17.6.2 site without this package on 2026-09-25 (counts in [docs/testing.md](docs/testing.md#manual-acceptance-runs)); the same code is unchanged in 17.7.0, 17.7.1 and 18.2.1.
-- On the same versions the Copy and Paste property actions of a Block List or Block Grid property throw a similar uncaught rejection ("UmbPropertyContext with API Alias: UmbClipboardPropertyContext"), once per action, when the property is re-rendered before its editor has loaded, again most often after a click on the already selected Content tab while the page loads. It was reproduced without this package on stock 17.6.2 and 17.7.0 sites on 2026-09-30, as often as with it (counts in [docs/testing.md](docs/testing.md#manual-acceptance-runs)); the code is unchanged up to 18.2.1.
+- On Umbraco 17.6.2 to 17.7.2 and 18.2.1 to 18.2.2 an inline-edited Block List item that is re-rendered while it initializes throws "Context request was cancelled, host was disconnected" as an uncaught promise rejection in the browser console, most often after a click on the already selected Content tab while the page loads. It was reproduced on a stock 17.6.2 site without this package on 2026-09-25 (counts in [docs/testing.md](docs/testing.md#manual-acceptance-runs)); the same code is unchanged in 17.7.0, 17.7.1, 17.7.2, 18.2.1 and 18.2.2.
+- On the same versions the Copy and Paste property actions of a Block List or Block Grid property throw a similar uncaught rejection ("UmbPropertyContext with API Alias: UmbClipboardPropertyContext"), once per action, when the property is re-rendered before its editor has loaded, again most often after a click on the already selected Content tab while the page loads. It was reproduced without this package on stock 17.6.2 and 17.7.0 sites on 2026-09-30, as often as with it (counts in [docs/testing.md](docs/testing.md#manual-acceptance-runs)); the code is unchanged up to 17.7.2 and 18.2.2.
 
 ## Upgrading to Umbraco 18
 
