@@ -34,9 +34,9 @@
 	</Target>
 
 	<!--
-		Umbraco.Cms 17 (up to 17.7.1) and 18 (up to 18.2.1) pin SixLabors.ImageSharp 3.1.12, and these advisories are only
-		fixed in 4.1.2, which neither supports. Only the test site and the unit tests reference it, so the advisories are accepted for
-		the projects that do not ship and nowhere else; with TreatWarningsAsErrors they would fail the restore. Remove them once Umbraco ships a patched ImageSharp. The condition works here because MSBuild evaluates
+		Umbraco.Cms 17 (up to 17.7.2) and 18 (up to 18.2.2) pin SixLabors.ImageSharp 3.1.12. GHSA-v76p-62qx-wwq2 is fixed in
+		3.2.0, which 17.8 and 18.3 reference; the others only in 4.1.2, which neither supports. Only the test site and the unit tests reference it, so the advisories are accepted for
+		the projects that do not ship and nowhere else; with TreatWarningsAsErrors they would fail the restore. Remove each once Umbraco ships an ImageSharp that fixes it. The condition works here because MSBuild evaluates
 		every property, including the project's IsPackable, before any item.
 	-->
 	<ItemGroup Condition="'$(IsPackable)' == 'false'">
@@ -44,6 +44,7 @@
 		<NuGetAuditSuppress Include="https://github.com/advisories/GHSA-j3p4-wp97-rph4" />
 		<NuGetAuditSuppress Include="https://github.com/advisories/GHSA-j9gm-c75j-xc9q" />
 		<NuGetAuditSuppress Include="https://github.com/advisories/GHSA-jjfr-hcj7-qf5w" />
+		<NuGetAuditSuppress Include="https://github.com/advisories/GHSA-v76p-62qx-wwq2" />
 		<NuGetAuditSuppress Include="https://github.com/advisories/GHSA-wmxv-xphr-5c9g" />
 	</ItemGroup>
 
