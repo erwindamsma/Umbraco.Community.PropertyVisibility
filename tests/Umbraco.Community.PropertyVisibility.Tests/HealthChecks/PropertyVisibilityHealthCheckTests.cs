@@ -82,7 +82,7 @@ public sealed class PropertyVisibilityHealthCheckTests
 			Assert.That(summary.Message, Does.Contain($"Rules source: appsettings (the rules file {ConfigurationAnalyzerTestSite.FilePath} does not exist or holds no JSON value)."));
 			Assert.That(summary.Message, Does.Contain($"Loaded at 2026-09-25 14:48:35 UTC; rules hash <code>{ConfigurationAnalyzerTestSite.SampleRulesHash}</code>."));
 			Assert.That(summary.Message, Does.Contain("3 sites configured, 2 root nodes in the content tree."));
-			Assert.That(summary.Message, Does.Contain("Umbraco 17.6.2 (tested: 17.6.2)."));
+			Assert.That(summary.Message, Does.Contain("Umbraco 17.6.2 (tested: 17.6.x from 17.6.2)."));
 			Assert.That(summary.ReadMoreLink, Is.Null);
 		});
 	}
@@ -215,7 +215,7 @@ public sealed class PropertyVisibilityHealthCheckTests
 
 		Assert.Multiple(() =>
 		{
-			Assert.That(message, Does.Contain("Umbraco 17.8.0 is not in the tested list (tested: 17.6.2)."));
+			Assert.That(message, Does.Contain("Umbraco 17.8.0 is not tested (tested: 17.6.x from 17.6.2)."));
 			Assert.That(message, Does.Contain("1 site configured, 1 root node in the content tree. The package is disabled."));
 		});
 	}

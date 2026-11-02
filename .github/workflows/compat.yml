@@ -3,7 +3,8 @@ name: Compatibility
 # Weekly build, unit tests, a type check of the client against that version's backoffice typings and the whole
 # Playwright suite against the latest stable Umbraco 17.x and 18.x (or a version given by hand), to catch backoffice
 # drift before users do. Each major runs compat-run.yml, which also opens the issues "Compatibility: Umbraco <version>"
-# (a failed run) and "Verify Umbraco <version>" (a green run against a version that is not verified yet).
+# (a failed run) and "Verify Umbraco <version>" (a green run against a new minor, or against a patch whose backoffice
+# sources changed).
 #
 # GitHub disables a scheduled workflow after 60 days without activity in a public repository: re-enable it in the
 # Actions tab after a quiet period (docs/compatibility.md, "Recurring check").

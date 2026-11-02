@@ -2,6 +2,7 @@ using Microsoft.Extensions.Logging;
 using Umbraco.Cms.Core.Composing;
 using Umbraco.Cms.Core.Configuration;
 using Umbraco.Cms.Core.DependencyInjection;
+using Umbraco.Community.PropertyVisibility.Services;
 
 namespace Umbraco.Community.PropertyVisibility.Composing;
 
@@ -23,7 +24,7 @@ public sealed class PropertyVisibilityComposer : IComposer
 				.LogWarning(
 					"Umbraco.Community.PropertyVisibility supports Umbraco {SupportedMajor}.x (tested: {TestedVersions}), but this site runs Umbraco {RunningVersion}: tabs and groups may not be hidden. See {CompatibilityUrl}",
 					Constants.SupportedUmbracoMajor,
-					string.Join(", ", Constants.TestedUmbracoVersions),
+					UmbracoVersionSupport.Describe(Constants.TestedUmbracoVersions),
 					running,
 					Constants.CompatibilityDocumentationUrl);
 		}

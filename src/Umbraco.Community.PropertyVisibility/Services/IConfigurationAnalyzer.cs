@@ -70,8 +70,11 @@ public sealed record ConfigurationAnalysisSummary(
 	Version UmbracoVersion,
 	IReadOnlyList<Version> TestedUmbracoVersions)
 {
-	/// <summary>Gets a value indicating whether the running Umbraco version is in <see cref="TestedUmbracoVersions" />.</summary>
-	public bool IsTestedUmbracoVersion => TestedUmbracoVersions.Contains(UmbracoVersion);
+	/// <summary>
+	///     Gets a value indicating whether the running Umbraco version is in <see cref="TestedUmbracoVersions" /> or a later
+	///     patch of a version in it (<see cref="UmbracoVersionSupport.IsTested" />).
+	/// </summary>
+	public bool IsTestedUmbracoVersion => UmbracoVersionSupport.IsTested(UmbracoVersion, TestedUmbracoVersions);
 }
 
 /// <summary>

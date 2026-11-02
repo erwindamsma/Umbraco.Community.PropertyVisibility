@@ -6,6 +6,10 @@ The release workflow publishes the section whose heading matches the tag (`## [1
 
 ## [Unreleased]
 
+### Changed
+
+- A later patch of a verified Umbraco version counts as tested: 17.8.1 is covered by 17.8.0, so the health check no longer reports `PV303` after an Umbraco patch release, and patch releases of the package for Umbraco patches stop. The health check, `PV303` and the startup warning name the tested versions per minor (`17.6.x from 17.6.2, 17.7.x, 17.8.x`).
+
 ## [1.1.3] and [2.0.2] - 2026-11-02
 
 ### Changed
