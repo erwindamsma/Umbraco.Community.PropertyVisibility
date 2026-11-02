@@ -915,8 +915,9 @@ public sealed class ConfigurationAnalyzerTests
 	[Test]
 	public void The_Umbraco_version_is_checked_even_when_the_options_are_invalid()
 	{
+		Version latest = Constants.TestedUmbracoVersions.Max()!;
 		_site.OptionsFailure = new InvalidOperationException("binder failure");
-		_site.UmbracoVersion = new Version(17, 8, 0);
+		_site.UmbracoVersion = new Version(latest.Major, latest.Minor + 1, 0);
 
 		ConfigurationAnalysis analysis = Analyze();
 
