@@ -169,10 +169,10 @@ public sealed class PropertyVisibilityHealthCheck : HealthCheck
 			lines.Add(Encode($"{Count(summary.SiteCount, "site")} configured, {Count(summary.RootNodeKeys.Count, "root node")} in the content tree.{enabled}"));
 		}
 
-		var tested = string.Join(", ", summary.TestedUmbracoVersions);
+		var tested = UmbracoVersionSupport.Describe(summary.TestedUmbracoVersions);
 		lines.Add(Encode(summary.IsTestedUmbracoVersion
 			? $"Umbraco {summary.UmbracoVersion} (tested: {tested})."
-			: $"Umbraco {summary.UmbracoVersion} is not in the tested list (tested: {tested})."));
+			: $"Umbraco {summary.UmbracoVersion} is not tested (tested: {tested})."));
 
 		return new HealthCheckStatus(string.Join("<br>", lines))
 		{

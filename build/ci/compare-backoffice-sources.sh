@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Compares the backoffice sources the client relies on (backoffice-sources.txt next to this script) between the last
-# verified Umbraco version of the same major, the highest of that major in Constants.TestedUmbracoVersions (one list per
-# major), and UMBRACO_CMS_VERSION, from the
+# verified Umbraco version and UMBRACO_CMS_VERSION: the highest version of UMBRACO_CMS_VERSION's minor at or below it in
+# Constants.TestedUmbracoVersions (one list per major), or for a new minor the highest of the major, from the
 # @umbraco-cms/backoffice npm packages, as compat.yml does. Each file is reprinted without comments by the client's
 # TypeScript before the diff, so changes to comments and formatting do not show.
 #
@@ -11,7 +11,8 @@
 # Writes to PV_COMPARE_DIR (default artifacts/backoffice-compare): summary.md (the table), report.md (the table and the
 # diff of every changed file, each cut at PV_COMPARE_MAX_LINES lines, default 200) and sources.diff (every diff in
 # full). In GitHub Actions it also appends report.md to the step summary and sets the step outputs `base-version`,
-# `tested` (true when UMBRACO_CMS_VERSION is in TestedUmbracoVersions) and `changed` (the number of files that differ).
+# `tested` (true when UMBRACO_CMS_VERSION is in TestedUmbracoVersions or a later patch of a version in it, the rule of
+# UmbracoVersionSupport.IsTested) and `changed` (the number of files that differ).
 # Needs the client's node_modules (build.sh installs them), node, npm, tar and diff.
 source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 
@@ -33,15 +34,23 @@ tested_versions=$(grep -E 'TestedUmbracoVersions *=' "$PACKAGE_DIR/Constants.cs"
 	sed -E 's/new Version\( *([0-9]+), *([0-9]+), *([0-9]+) *\)/\1.\2.\3/' |
 	grep -E "^$target_major\." || true)
 [ -n "$tested_versions" ] || fail "no Umbraco $target_major versions found in TestedUmbracoVersions in $PACKAGE_DIR/Constants.cs"
+IFS=. read -r _ target_minor target_patch <<< "${target%%-*}"
+# The verified versions of the target's minor at or below it; the target is tested when there is one.
+covering=$(while IFS=. read -r major minor patch; do
+	if [ "$minor" = "$target_minor" ] && [ "$patch" -le "$target_patch" ]; then echo "$major.$minor.$patch"; fi
+done <<< "$tested_versions")
+tested=false
+[ -z "$covering" ] || tested=true
 if [ -n "${1:-}" ]; then
 	base=$1
 	base_label="Umbraco $base"
+elif [ -n "$covering" ]; then
+	base=$(sort -V <<< "$covering" | tail -n 1)
+	base_label="Umbraco $base (the last verified version of $target_major.$target_minor)"
 else
 	base=$(sort -V <<< "$tested_versions" | tail -n 1)
 	base_label="Umbraco $base (the last verified version)"
 fi
-tested=false
-if grep -qxF "$target" <<< "$tested_versions"; then tested=true; fi
 
 trim() {
 	local text=$1

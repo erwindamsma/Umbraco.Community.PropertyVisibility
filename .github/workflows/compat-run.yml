@@ -9,9 +9,10 @@ name: Compatibility run
 # A failed run, or a scheduled run cancelled by its timeout, opens an issue "Compatibility: Umbraco <version>", or
 # comments on the open one. Every run
 # also compares the backoffice sources the client relies on (build/ci/backoffice-sources.txt) with the last verified
-# version of the major and shows the result in its summary; a green run against a version that is not in
-# Constants.TestedUmbracoVersions opens one issue "Verify Umbraco <version>" with that comparison, for the manual part
-# of docs/compatibility.md "Recurring check".
+# version of the minor, or of the major for a new minor, and shows the result in its summary. A green run opens one issue "Verify Umbraco <version>" with
+# that comparison, for the manual part of docs/compatibility.md "Recurring check", against a new minor (a version that
+# is not tested: not in Constants.TestedUmbracoVersions and not a later patch of a version in it) and against a patch of
+# a tested minor whose comparison shows changes. A patch without changes needs nothing: the package counts it as tested.
 
 on:
   workflow_call:
@@ -43,6 +44,7 @@ jobs:
     outputs:
       umbraco-version: ${{ steps.resolve.outputs.version }}
       tested: ${{ steps.compare.outputs.tested }}
+      changed: ${{ steps.compare.outputs.changed }}
     env:
       PV_PORT: 44300
     steps:
@@ -263,11 +265,12 @@ jobs:
             gh issue create --title "$title" --body "$body"
           fi
 
-  # A green run against a version that is not verified yet. No checkout: it only reads the compat job's comparison.
+  # A green run against a new minor, or against a patch of a tested minor whose backoffice sources changed. No checkout:
+  # it only reads the compat job's comparison.
   report-new-version:
     name: Open the verification issue
     needs: compat
-    if: ${{ needs.compat.result == 'success' && needs.compat.outputs.tested == 'false' }}
+    if: ${{ needs.compat.result == 'success' && (needs.compat.outputs.tested == 'false' || needs.compat.outputs.changed != '0') }}
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
@@ -284,6 +287,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
           UMBRACO_VERSION: ${{ needs.compat.outputs.umbraco-version }}
+          TESTED: ${{ needs.compat.outputs.tested }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
           set -euo pipefail
@@ -295,16 +299,29 @@ jobs:
             echo "Issue #$number exists already"
             exit 0
           fi
-          {
-            echo "The compatibility run against Umbraco.Cms $UMBRACO_VERSION passed: $RUN_URL"
-            echo
-            echo "Left before $UMBRACO_VERSION is Verified (docs/compatibility.md, Recurring check):"
-            echo
-            echo "- [ ] Look into every change below in code the package relies on"
-            echo "- [ ] Check the upstream issues listed in docs/compatibility.md, and whether the known upstream errors in the acceptance suite (KNOWN_UPSTREAM_ERRORS) are fixed"
-            echo "- [ ] Add $UMBRACO_VERSION to the Umbraco $UMBRACO_MAJOR list of Constants.TestedUmbracoVersions, to docs/compatibility.md (a row and \"What was re-checked for $UMBRACO_VERSION\") and to the README's version table"
-            echo
-          } > body.md
+          if [ "$TESTED" = "true" ]; then
+            {
+              echo "The compatibility run against Umbraco.Cms $UMBRACO_VERSION passed: $RUN_URL"
+              echo
+              echo "The package already counts $UMBRACO_VERSION as tested, as a patch of a verified minor, but the backoffice sources the client relies on changed (docs/compatibility.md, Recurring check):"
+              echo
+              echo "- [ ] Look into every change below in code the package relies on"
+              echo "- [ ] When nothing needs a change: add $UMBRACO_VERSION to the Umbraco $UMBRACO_MAJOR list of Constants.TestedUmbracoVersions and a row to docs/compatibility.md, so later runs compare with it. No release is needed."
+              echo "- [ ] When something does: fix it and release a patch of the package"
+              echo
+            } > body.md
+          else
+            {
+              echo "The compatibility run against Umbraco.Cms $UMBRACO_VERSION passed: $RUN_URL"
+              echo
+              echo "Left before $UMBRACO_VERSION is Verified (docs/compatibility.md, Recurring check):"
+              echo
+              echo "- [ ] Look into every change below in code the package relies on"
+              echo "- [ ] Check the upstream issues listed in docs/compatibility.md, and whether the known upstream errors in the acceptance suite (KNOWN_UPSTREAM_ERRORS) are fixed"
+              echo "- [ ] Add $UMBRACO_VERSION to the Umbraco $UMBRACO_MAJOR list of Constants.TestedUmbracoVersions, to docs/compatibility.md (a row and \"What was re-checked for $UMBRACO_VERSION\") and to the README's version table, then release a patch of the package"
+              echo
+            } > body.md
+          fi
           # An issue body holds 65536 characters; without the diffs the table always fits.
           if [ $(($(wc -c < body.md) + $(wc -c < backoffice-compare/report.md))) -le 65000 ]; then
             cat backoffice-compare/report.md >> body.md

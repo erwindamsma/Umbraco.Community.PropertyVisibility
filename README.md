@@ -167,7 +167,7 @@ Rules keyed by an element type apply inside blocks, for the site of the document
 }
 ```
 
-Covered by the acceptance suite on Umbraco 17.6.2, 17.7.0, 17.7.1, 17.7.2, 17.8.0, 18.2.1, 18.2.2 and 18.3.0: Block List in a modal and inline, Block Grid in a modal, blocks inside blocks (two levels deep), blocks in a document that is not saved yet, blocks in a culture-variant document in split view, Single Block in a modal and inline, blocks in the rich text editor, and blocks pasted from the clipboard into another site's document (they follow the site they are pasted into).
+Covered by the acceptance suite on every verified Umbraco version ([Supported Umbraco versions](#supported-umbraco-versions)): Block List in a modal and inline, Block Grid in a modal, blocks inside blocks (two levels deep), blocks in a document that is not saved yet, blocks in a culture-variant document in split view, Single Block in a modal and inline, blocks in the rich text editor, and blocks pasted from the clipboard into another site's document (they follow the site they are pasted into).
 
 Where it does not apply:
 
@@ -214,18 +214,15 @@ Up to Umbraco 13, fields were often hidden per site by a `SendingContentNotifica
 
 | Umbraco | Package | Status |
 |---|---|---|
-| 17.6.2 | 1.x | Verified, the lowest supported 17.x |
-| 17.7.0 | 1.x | Verified |
-| 17.7.1 | 1.x | Verified |
-| 17.7.2 | 1.x | Verified |
-| 17.8.0 | 1.x | Verified |
+| 17.6.x from 17.6.2 | 1.x | Verified on 17.6.2, the lowest supported 17.x |
+| 17.7.x | 1.x | Verified on 17.7.0 to 17.7.2 |
+| 17.8.x | 1.x | Verified on 17.8.0 |
 | 17.0 to 17.6.1 | | Not supported: the package relies on backoffice APIs verified from 17.6.2 on |
-| 18.2.1 | 2.x | Verified, the lowest supported 18.x |
-| 18.2.2 | 2.x | Verified |
-| 18.3.0 | 2.x | Verified |
+| 18.2.x from 18.2.1 | 2.x | Verified on 18.2.1 and 18.2.2, the lowest supported 18.x |
+| 18.3.x | 2.x | Verified on 18.3.0 |
 | 18.0 to 18.2.0 | | Not supported: not verified |
 
-1.x depends on Umbraco `[17.6.2, 18.0.0)`, 2.x on `[18.2.1, 19.0.0)`, both on .NET 10. A later version of the same Umbraco major can be installed; until it is verified here, the health check reports it as `PV303` (Info). What each verification covered: [docs/compatibility.md](docs/compatibility.md).
+1.x depends on Umbraco `[17.6.2, 18.0.0)`, 2.x on `[18.2.1, 19.0.0)`, both on .NET 10. Umbraco minors are verified one by one; a later patch of a verified minor counts as verified, and a weekly compatibility run tests the latest patch of each major. A later minor of the same major can be installed; until it is verified here, the health check reports it as `PV303` (Info). What each verification covered: [docs/compatibility.md](docs/compatibility.md).
 
 ## What it does not do
 

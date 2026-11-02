@@ -19,8 +19,9 @@ test.describe.configure({ mode: 'serial' });
 const RELOAD_TIMEOUT_MS = 5_000;
 
 /**
- * A Success summary with nothing but informational statuses after it. On an Umbraco version outside the tested list
- * (the compatibility job builds against the latest 17.x) the check adds PV303 at Info, and the summary stays Success.
+ * A Success summary with nothing but informational statuses after it. On an untested Umbraco version (the compatibility
+ * job builds against the latest 17.x and 18.x, which can be a new minor) the check adds PV303 at Info, and the summary
+ * stays Success.
  */
 const isHealthy = (results: HealthCheckResult[]) =>
 	results[0]?.resultType === 'Success' && results.every((result) => result.resultType !== 'Error' && result.resultType !== 'Warning');

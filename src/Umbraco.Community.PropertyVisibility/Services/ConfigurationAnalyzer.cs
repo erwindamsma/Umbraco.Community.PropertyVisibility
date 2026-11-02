@@ -132,15 +132,16 @@ public sealed partial class ConfigurationAnalyzer : IConfigurationAnalyzer
 
 		Version running = _umbracoVersion.Version;
 		IReadOnlyList<Version> tested = Constants.TestedUmbracoVersions;
-		if (!tested.Contains(running))
+		if (!UmbracoVersionSupport.IsTested(running, tested))
 		{
 			var sameMajor = running.Major == Constants.SupportedUmbracoMajor;
+			var described = UmbracoVersionSupport.Describe(tested);
 			issues.Add(new ConfigurationAnalysisIssue(
 				IssueCodes.UntestedUmbracoVersion,
 				sameMajor ? IssueSeverity.Info : IssueSeverity.Warning,
 				sameMajor
-					? $"Umbraco {running} is supported but not in the tested list ({string.Join(", ", tested)}). If tabs or groups are no longer hidden, see {Constants.CompatibilityDocumentationUrl}"
-					: $"Umbraco {running} is not supported: the package supports Umbraco {Constants.SupportedUmbracoMajor}.x (tested: {string.Join(", ", tested)}), so tabs and groups may not be hidden. See {Constants.CompatibilityDocumentationUrl}",
+					? $"Umbraco {running} is supported but not tested (tested: {described}). If tabs or groups are no longer hidden, see {Constants.CompatibilityDocumentationUrl}"
+					: $"Umbraco {running} is not supported: the package supports Umbraco {Constants.SupportedUmbracoMajor}.x (tested: {described}), so tabs and groups may not be hidden. See {Constants.CompatibilityDocumentationUrl}",
 				Path: "Umbraco"));
 		}
 

@@ -869,14 +869,19 @@ public sealed class ConfigurationAnalyzerTests
 		});
 	}
 
-	// Relative to the build's Umbraco major (17 for package 1.x, 18 for 2.x): another version of that major is Info, another
-	// major a Warning.
+	// Relative to the build's Umbraco major (17 for package 1.x, 18 for 2.x): an untested version of that major (a minor
+	// without a verified version, or a patch below the first verified one of its minor) is Info, another major a Warning.
 	private static IEnumerable<TestCaseData> UntestedUmbracoVersions()
 	{
 		int major = Constants.SupportedUmbracoMajor;
 		Version latest = Constants.TestedUmbracoVersions.Max()!;
+		Version lowest = Constants.TestedUmbracoVersions.Min()!;
 		yield return new TestCaseData(new Version(major, latest.Minor + 1, 0), IssueSeverity.Info);
-		yield return new TestCaseData(new Version(major, latest.Minor, latest.Build + 1), IssueSeverity.Info);
+		if (lowest.Build > 0)
+		{
+			yield return new TestCaseData(new Version(major, lowest.Minor, lowest.Build - 1), IssueSeverity.Info);
+		}
+
 		yield return new TestCaseData(new Version(major + 1, 0, 0), IssueSeverity.Warning);
 		yield return new TestCaseData(new Version(major - 1, 4, 0), IssueSeverity.Warning);
 	}
@@ -893,12 +898,16 @@ public sealed class ConfigurationAnalyzerTests
 		{
 			Assert.That(issue.Severity, Is.EqualTo(expected));
 			Assert.That(issue.Message, Does.Contain($"Umbraco {version}"));
-			Assert.That(issue.Message, Does.Contain(string.Join(", ", Constants.TestedUmbracoVersions)));
+			Assert.That(issue.Message, Does.Contain($"(tested: {UmbracoVersionSupport.Describe(Constants.TestedUmbracoVersions)})"));
 			Assert.That(analysis.Summary.IsTestedUmbracoVersion, Is.False);
 		});
 	}
 
+	private static IEnumerable<Version> LaterPatchesOfTestedVersions()
+		=> Constants.TestedUmbracoVersions.Select(version => new Version(version.Major, version.Minor, version.Build + 5));
+
 	[TestCaseSource(typeof(Constants), nameof(Constants.TestedUmbracoVersions))]
+	[TestCaseSource(nameof(LaterPatchesOfTestedVersions))]
 	public void A_tested_Umbraco_version_is_not_PV303(Version version)
 	{
 		_site.UmbracoVersion = version;

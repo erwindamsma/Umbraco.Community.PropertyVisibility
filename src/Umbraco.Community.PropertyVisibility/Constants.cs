@@ -29,7 +29,8 @@ internal static class Constants
 	public const int SupportedUmbracoMajor = 18;
 
 	/// <summary>
-	///     Umbraco versions the package's acceptance checklist has been run against.
+	///     Umbraco versions the package's acceptance checklist has been run against. A later patch of one counts as tested
+	///     too (<see cref="Services.UmbracoVersionSupport" />).
 	/// </summary>
 	public static readonly IReadOnlyList<Version> TestedUmbracoVersions = [new Version(18, 2, 1), new Version(18, 2, 2), new Version(18, 3, 0)];
 #else
@@ -39,7 +40,8 @@ internal static class Constants
 	public const int SupportedUmbracoMajor = 17;
 
 	/// <summary>
-	///     Umbraco versions the package's acceptance checklist has been run against.
+	///     Umbraco versions the package's acceptance checklist has been run against. A later patch of one counts as tested
+	///     too (<see cref="Services.UmbracoVersionSupport" />).
 	/// </summary>
 	public static readonly IReadOnlyList<Version> TestedUmbracoVersions = [new Version(17, 6, 2), new Version(17, 7, 0), new Version(17, 7, 1), new Version(17, 7, 2), new Version(17, 8, 0)];
 #endif
