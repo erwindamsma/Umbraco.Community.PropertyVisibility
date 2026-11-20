@@ -89,6 +89,7 @@ jobs:
           name: nupkg-umbraco-${{ matrix.umbraco-major }}
           path: artifacts/nupkg/*.nupkg
           if-no-files-found: error
+          retention-days: 7
 
       - name: Upload unit test results
         if: failure()
@@ -97,6 +98,7 @@ jobs:
           name: unit-test-results-umbraco-${{ matrix.umbraco-major }}
           path: TestResults
           if-no-files-found: ignore
+          retention-days: 7
 
   # The nupkg of build-test-pack, installed into a copy of the test site the way a site gets it: no ProjectReference, so
   # the package's buildTransitive props, JSON schemas and static web assets are what the suite tests. Skipped for a
@@ -162,23 +164,25 @@ jobs:
         run: bash build/ci/stop-test-site.sh
 
       - name: Upload Playwright report
-        if: always()
+        if: failure()
         uses: actions/upload-artifact@v7
         with:
           name: playwright-report-umbraco-${{ matrix.umbraco-major }}
           path: tests/Umbraco.Community.PropertyVisibility.AcceptanceTests/playwright-report
           if-no-files-found: ignore
+          retention-days: 7
 
       - name: Upload Playwright test results
-        if: always()
+        if: failure()
         uses: actions/upload-artifact@v7
         with:
           name: playwright-test-results-umbraco-${{ matrix.umbraco-major }}
           path: tests/Umbraco.Community.PropertyVisibility.AcceptanceTests/test-results
           if-no-files-found: ignore
+          retention-days: 7
 
       - name: Upload test site logs
-        if: always()
+        if: failure()
         uses: actions/upload-artifact@v7
         with:
           name: test-site-logs-umbraco-${{ matrix.umbraco-major }}
@@ -186,6 +190,7 @@ jobs:
             ${{ env.PV_TEST_SITE_DIR }}/umbraco/Logs
             artifacts/test-site/test-site.log
           if-no-files-found: ignore
+          retention-days: 7
 
   # The checks the main ruleset requires: one per stage, for both Umbraco majors. They always run, because a matrix job
   # that is skipped never reports its expanded names ("..., Umbraco 17"), so a required check on such a name would wait

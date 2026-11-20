@@ -117,6 +117,7 @@ jobs:
           name: compat-backoffice-sources-umbraco-${{ inputs.umbraco-major }}
           path: artifacts/backoffice-compare
           if-no-files-found: ignore
+          retention-days: 14
 
       - name: Upload Playwright report
         if: always()
@@ -125,6 +126,7 @@ jobs:
           name: compat-playwright-report-umbraco-${{ inputs.umbraco-major }}
           path: tests/Umbraco.Community.PropertyVisibility.AcceptanceTests/playwright-report
           if-no-files-found: ignore
+          retention-days: 14
 
       - name: Upload Playwright test results
         if: always()
@@ -133,6 +135,7 @@ jobs:
           name: compat-playwright-test-results-umbraco-${{ inputs.umbraco-major }}
           path: tests/Umbraco.Community.PropertyVisibility.AcceptanceTests/test-results
           if-no-files-found: ignore
+          retention-days: 14
 
       - name: Upload test site logs
         if: always()
@@ -143,6 +146,7 @@ jobs:
             src/Umbraco.Community.PropertyVisibility.TestSite/umbraco/Logs
             artifacts/test-site/test-site.log
           if-no-files-found: ignore
+          retention-days: 14
 
   # The package as a site installs it: no ProjectReference, so the nupkg's buildTransitive props and static web assets are
   # what runs. Builds nothing of this repository but the copied test site.
@@ -213,6 +217,7 @@ jobs:
           name: compat-published-package-playwright-report-umbraco-${{ inputs.umbraco-major }}
           path: tests/Umbraco.Community.PropertyVisibility.AcceptanceTests/playwright-report
           if-no-files-found: ignore
+          retention-days: 14
 
       - name: Upload Playwright test results
         if: always()
@@ -221,6 +226,7 @@ jobs:
           name: compat-published-package-playwright-test-results-umbraco-${{ inputs.umbraco-major }}
           path: tests/Umbraco.Community.PropertyVisibility.AcceptanceTests/test-results
           if-no-files-found: ignore
+          retention-days: 14
 
       - name: Upload test site logs
         if: always()
@@ -231,6 +237,7 @@ jobs:
             ${{ env.PV_TEST_SITE_DIR }}/umbraco/Logs
             artifacts/test-site/test-site.log
           if-no-files-found: ignore
+          retention-days: 14
 
   # The only jobs that may write issues. This one also runs when a scheduled run was cancelled (the job timeout cancels
   # a job).
