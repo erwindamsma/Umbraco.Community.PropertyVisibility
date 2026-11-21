@@ -201,7 +201,9 @@ export class BlockModal {
 
 /**
  * Opens a block in a modal with its Edit (content) or Settings block action, the way an editor does: hover the entry,
- * click the action. Resolves with the new, innermost modal once its workspace editor is attached.
+ * click the action. Resolves with the new, innermost modal once its workspace editor is attached. hover() scrolls the
+ * entry into view itself and finds it again when Umbraco redraws the list (after a first save); scrollIntoViewIfNeeded()
+ * fails on such a redraw.
  */
 export async function openBlockModal(
 	page: Page,
@@ -211,7 +213,6 @@ export async function openBlockModal(
 	const editors = blockModalEditors(page);
 	const before = await editors.count();
 	const action = view === 'settings' ? 'Umb.BlockAction.EditSettings' : 'Umb.BlockAction.EditContent';
-	await entry.scrollIntoViewIfNeeded();
 	await entry.hover();
 	await entry.locator(`uui-button[data-mark="block-action:${action}"]`).first().click();
 	await expect(editors).toHaveCount(before + 1);
@@ -309,7 +310,6 @@ export async function createBlockInModal(page: Page, createButton: Locator, bloc
  * storage, so each test starts with an empty one.
  */
 export async function copyBlockToClipboard(entry: Locator): Promise<void> {
-	await entry.scrollIntoViewIfNeeded();
 	await entry.hover();
 	await entry.locator('uui-button[data-mark="block-action:Umb.BlockAction.CopyToClipboard"]').first().click();
 }
