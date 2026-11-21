@@ -21,7 +21,7 @@
 
 	<ItemGroup Label="Test site">
 		<!-- uSync majors follow Umbraco majors -->
-		<PackageVersion Include="uSync" Version="17.6.0" Condition="'$(UmbracoMajor)' == '17'" />
+		<PackageVersion Include="uSync" Version="17.6.2" Condition="'$(UmbracoMajor)' == '17'" />
 		<PackageVersion Include="uSync" Version="18.1.5" Condition="'$(UmbracoMajor)' == '18'" />
 		<PackageVersion Include="Microsoft.ICU.ICU4C.Runtime" Version="72.1.0.3" />
 	</ItemGroup>
@@ -29,7 +29,7 @@
 	<ItemGroup Label="Tests">
 		<PackageVersion Include="NUnit" Version="3.14.0" />
 		<PackageVersion Include="NUnit3TestAdapter" Version="6.3.1" />
-		<PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.11.0" />
+		<PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.12.0" />
 		<PackageVersion Include="Moq" Version="4.21.0" />
 		<!-- Follows UmbracoCmsVersion, so a build against another Umbraco version does not mix two versions in the test graph -->
 		<PackageVersion Include="Umbraco.Cms.Tests" Version="$(UmbracoCmsVersion)" />
@@ -37,7 +37,7 @@
 
 	<ItemGroup Label="Tools and tests">
 		<!-- The schema generator writes the JSON schemas with it; the unit tests validate the samples against them with it (MIT) -->
-		<PackageVersion Include="NJsonSchema" Version="11.6.1" />
+		<PackageVersion Include="NJsonSchema" Version="11.6.2" />
 	</ItemGroup>
 
 </Project>
